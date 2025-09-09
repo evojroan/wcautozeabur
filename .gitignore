@@ -1,0 +1,17 @@
+
+# Playwright
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Project specific files
+WooCommerce所有測試項目與優化 - 捷徑.lnk
+待修正.txt
+
