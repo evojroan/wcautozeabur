@@ -1,7 +1,6 @@
 import allconsts from "./allconsts.js";
 import sharedActions from "./sharedActions.js";
-import { test, logisticsType } from "./config.js";
-
+import config from "./config.js"
 // 測試工廠函數
 function createTest(actions) {
   return {
@@ -17,300 +16,377 @@ function createTest(actions) {
   };
 }
 
+const defaulttest000 = {
+  beforeSetupOption: 1,
+  productID: allconsts.productIDHigh,
+  paymentAction: sharedActions.aioCheckOutCreditCard,
+  invoiceTypeSelect: "p",
+  carrierTypeSelect: "0",
+  logisticsOption: allconsts.ecpayOptions.logistics711,
+  paymentOption: allconsts.ecpayOptions.paymentCredit,
+  paymentAIO: "2A", //全方位金流付款結果頁面截圖檔名
+  paymentWCResult: "41A",//付款完成，導回 WC 結果頁
+  paymentWCBackStage: "2B", //WC 訂單內頁截圖檔名
+  paymentECPayBackStage: "2C", //廠商管理後台查詢結果截圖檔名
+  needECPayPaymentScreeshot: true,
+  needLogiScreenshot: true,
+  logisticsSelectStore: "44A",
+  logisticsWCBackStageBefore: "49A",
+  logisticsWCBackStageAfter: "49B",
+  logisticsWCBackStage: `${config.logisticsType === "C2C" ? "53A" : "65A"}`, //WC 訂單內頁截圖檔名
+  logisticsECPayBackStage: `${config.logisticsType === "C2C" ? "53B" : "65B"}`, //廠商管理後台查詢結果截圖檔名
+  logisticsPrintLabel: `${config.logisticsType === "C2C" ? "54A" : "66A"}`,
+  needInvoiceScreenshot: true,
+  invoiceManualWCBefore: "81A",
+  invoiceManualWCAfter: "81B",
+  invoiceManualECPay: "81C",
+  invoiceAutoWCAfter: "87A",
+  invoiceAutoECPay: "87B",
+};
+
 const alltests = {
-  test000: createTest({
-    beforeSetupOption: 1,
-    productID: allconsts.productIDHigh,
-    purchaseOption: sharedActions.aioCheckOutCreditCard,
-    invoiceTypeSelect: "p",
-    carrierTypeSelect: "0",
-    logisticsOption: allconsts.ecpayOptions.logistics711,
-    paymentOption: allconsts.ecpayOptions.paymentCredit,
-
-    paymentScreenshotAIO: "2A", //全方位金流付款結果頁面截圖檔名
-    paymentScreenshotWCBackStage: "2B", //WC 訂單內頁截圖檔名
-    paymentScreenshotECPayBackStage: "2C", //廠商管理後台查詢結果截圖檔名
-
-    logisticsScreenshotWCBackStageBefore: "建立物流訂單以前",
-    logisticsScreenshotWCBackStage: `${
-      logisticsType === "C2C" ? "51A" : "63A"
-    }`, //WC 訂單內頁截圖檔名
-    logisticsScreenshotECPayBackStage: `${
-      logisticsType === "C2C" ? "51B" : "63B"
-    }`, //廠商管理後台查詢結果截圖檔名
-
-    logisticsScreenshotPrintLabel: `${
-      logisticsType === "C2C" ? "52A" : "64A"
-    }`,
-
-    invoiceManualWCBefore: "79A",
-    invoiceManualWCAfter: "79B",
-    invoiceManualECPay:"79C",
-    invoiceAutoWCAfter:"85A",
-    invoiceAutoECPay: "85B",
-  }),
-
+  test000: createTest(defaulttest000),
   test001: createTest({
-    productID: allconsts.productIDHigh,
-    purchaseOption: sharedActions.aioCheckOutCreditCard,
-    invoiceTypeSelect: "p",
+    ...defaulttest000,
     carrierTypeSelect: "1",
     logisticsOption: allconsts.ecpayOptions.logisticsFamily,
     paymentOption: allconsts.ecpayOptions.paymentCreditInstallment,
     creditInstallment: "3",
-    paymentScreenshotAIO: "3A", //全方位金流付款結果頁面截圖檔名
-    paymentScreenshotWCBackStage: "3B", //WC 訂單內頁截圖檔名
-    paymentScreenshotECPayBackStage: "3C", //廠商管理後台查詢結果截圖檔名
+    paymentAIO: "3A", //全方位金流付款結果頁面截圖檔名
+    paymentWCBackStage: "3B", //WC 訂單內頁截圖檔名
+    paymentECPayBackStage: "3C", //廠商管理後台查詢結果截圖檔名
+    logisticsSelectStore: "45A",
+    logisticsWCBackStage: `${config.logisticsType === "C2C" ? "56A" : "68A"
+      }`, //WC 訂單內頁截圖檔名
+    logisticsECPayBackStage: `${config.logisticsType === "C2C" ? "56B" : "68B"
+      }`, //廠商管理後台查詢結果截圖檔名
 
-    logisticsScreenshotWCBackStage: `${
-      logisticsType === "C2C" ? "54A" : "66A"
-    }`, //WC 訂單內頁截圖檔名
-    logisticsScreenshotECPayBackStage: `${
-      logisticsType === "C2C" ? "54B" : "66B"
-    }`, //廠商管理後台查詢結果截圖檔名
+    logisticsPrintLabel: `${config.logisticsType === "C2C" ? "57A" : "69A"
+      }`,
 
-    logisticsScreenshotPrintLabel: `${
-      logisticsType === "C2C" ? "55A" : "67A"
-    }`,
+    invoiceManualWCBefore: "82A",
+    invoiceManualWCAfter: "82B",
+    invoiceManualECPay: "82C",
+    invoiceAutoWCAfter: "88A",
+    invoiceAutoECPay: "88B",
+  }
+  ),
 
-    invoiceManualWCBefore: "80A",
-    invoiceManualWCAfter: "80B",
-    invoiceManualECPay:"80C",
-    invoiceAutoWCAfter:"86A",
-    invoiceAutoECPay: "86B",
 
- 
-
-  
-  }),
 
   test002: createTest({
-    productID: allconsts.productIDHigh,
-    purchaseOption: sharedActions.aioCheckOutCreditCard,
-    invoiceTypeSelect: "p", //發票：個人
+    ...defaulttest000,
     carrierTypeSelect: "2", //自然人憑證
     logisticsOption: allconsts.ecpayOptions.logisticsHilife,
-
     paymentOption: allconsts.ecpayOptions.paymentCreditInstallment,
     creditInstallment: "6",
-    paymentScreenshotAIO: "4A", //全方位金流付款結果頁面截圖檔名
-    paymentScreenshotWCBackStage: "4B", //WC 訂單內頁截圖檔名
-    paymentScreenshotECPayBackStage: "4C", //廠商管理後台查詢結果截圖檔名
+    paymentAIO: "4A", //全方位金流付款結果頁面截圖檔名
+    paymentWCBackStage: "4B", //WC 訂單內頁截圖檔名
+    paymentECPayBackStage: "4C", //廠商管理後台查詢結果截圖檔名
+    logisticsSelectStore: "46A",
+    logisticsWCBackStage: `${config.logisticsType === "C2C" ? "59A" : "71A"
+      }`, //WC 訂單內頁截圖檔名
+    logisticsECPayBackStage: `${config.logisticsType === "C2C" ? "59B" : "71B"
+      }`, //廠商管理後台查詢結果截圖檔名
+
+    logisticsPrintLabel: `${config.logisticsType === "C2C" ? "60A" : "72A"
+      }`,
+    invoiceManualWCBefore: "83A",
+    invoiceManualWCAfter: "83B",
+    invoiceManualECPay: "83C",
+    invoiceAutoWCAfter: "89A",
+    invoiceAutoECPay: "89B",
   }),
 
   test003: createTest({
-    productID: allconsts.productIDHigh,
-    purchaseOption: sharedActions.aioCheckOutCreditCard,
-    invoiceTypeSelect: "p",
+    ...defaulttest000,
     carrierTypeSelect: "3",
-    logisticsOption: allconsts.ecpayOptions.logisticsOkmart,
+    logisticsOption: config.logisticsType === "C2C" ? allconsts.ecpayOptions.logisticsOkmart : allconsts.ecpayOptions.logisticsHilife,
     paymentOption: allconsts.ecpayOptions.paymentCreditInstallment,
     creditInstallment: "12",
-    paymentScreenshotAIO: "5A", //全方位金流付款結果頁面截圖檔名
-    paymentScreenshotWCBackStage: "5B", //WC 訂單內頁截圖檔名
-    paymentScreenshotECPayBackStage: "5C", //廠商管理後台查詢結果截圖檔名
+    paymentAIO: "5A", //全方位金流付款結果頁面截圖檔名
+    paymentWCBackStage: "5B", //WC 訂單內頁截圖檔名
+    paymentECPayBackStage: "5C", //廠商管理後台查詢結果截圖檔名
+    logisticsSelectStore: "47A",
+    logisticsWCBackStage: `${config.logisticsType === "C2C" ? "62A" : "71A"
+      }`, //WC 訂單內頁截圖檔名
+    logisticsECPayBackStage: `${config.logisticsType === "C2C" ? "62B" : "71B"
+      }`, //廠商管理後台查詢結果截圖檔名
+
+    logisticsPrintLabel: `${config.logisticsType === "C2C" ? "63A" : "72A"
+      }`,
+    invoiceManualWCBefore: "84A",
+    invoiceManualWCAfter: "84B",
+    invoiceManualECPay: "84C",
+    invoiceAutoWCAfter: "90A",
+    invoiceAutoECPay: "90B",
   }),
 
   test004: createTest({
-    productID: allconsts.productIDHigh,
-    purchaseOption: sharedActions.aioCheckOutCreditCard,
+    ...defaulttest000,
     invoiceTypeSelect: "c", //發票：公司
-    carrierTypeSelect: "0",
     logisticsOption: allconsts.ecpayOptions.logisticsTcat,
     paymentOption: allconsts.ecpayOptions.paymentCreditInstallment,
     creditInstallment: "18",
-    paymentScreenshotAIO: "6A", //全方位金流付款結果頁面截圖檔名
-    paymentScreenshotWCBackStage: "6B", //WC 訂單內頁截圖檔名
-    paymentScreenshotECPayBackStage: "6C", //廠商管理後台查詢結果截圖檔名
+    paymentAIO: "6A", //全方位金流付款結果頁面截圖檔名
+    paymentWCBackStage: "6B", //WC 訂單內頁截圖檔名
+    paymentECPayBackStage: "6C", //廠商管理後台查詢結果截圖檔名
+    logisticsWCBackStage: "73A",
+    logisticsECPayBackStage: "73B",
+    logisticsPrintLabel: "75A",
+
+    invoiceManualWCBefore: "85A",
+    invoiceManualWCAfter: "85B",
+    invoiceManualECPay: "85C",
+    invoiceAutoWCAfter: "91A",
+    invoiceAutoECPay: "91B",
   }),
+
   test005: createTest({
-    productID: allconsts.productIDHigh,
-    purchaseOption: sharedActions.aioCheckOutCreditCard,
+    ...defaulttest000,
     invoiceTypeSelect: "d", //捐贈
-    carrierTypeSelect: "0",
     logisticsOption: allconsts.ecpayOptions.logisticsPost,
     paymentOption: allconsts.ecpayOptions.paymentCreditInstallment,
     creditInstallment: "24",
-    paymentScreenshotAIO: "7A", //全方位金流付款結果頁面截圖檔名
-    paymentScreenshotWCBackStage: "7B", //WC 訂單內頁截圖檔名
-    paymentScreenshotECPayBackStage: "7C", //廠商管理後台查詢結果截圖檔名
+    paymentAIO: "7A", //全方位金流付款結果頁面截圖檔名
+    paymentWCBackStage: "7B", //WC 訂單內頁截圖檔名
+    paymentECPayBackStage: "7C", //廠商管理後台查詢結果截圖檔名
+    logisticsWCBackStage: "76A", //WC 訂單內頁截圖檔名
+    logisticsECPayBackStage: "76B", //廠商管理後台查詢結果截圖檔名
+    logisticsPrintLabel: "77A",
+    invoiceManualWCBefore: "86A",
+    invoiceManualWCAfter: "86B",
+    invoiceManualECPay: "86C",
+    invoiceAutoWCAfter: "92A",
+    invoiceAutoECPay: "92B",
   }),
 
   test006: createTest({
+    ...defaulttest000,
     beforeSetupOption: 1,
-    productID: allconsts.productIDHigh,
-    purchaseOption: sharedActions.aioCheckOutCreditCard,
-    invoiceTypeSelect: "p",
-    carrierTypeSelect: "0",
-    logisticsOption: allconsts.ecpayOptions.logisticsPost,
     paymentOption: allconsts.ecpayOptions.paymentCreditDCA,
-    paymentScreenshotAIO: "8A", //全方位金流付款結果頁面截圖檔名
-    paymentScreenshotWCBackStage: "8B", //WC 訂單內頁截圖檔名
-    paymentScreenshotECPayBackStage: "8C", //廠商管理後台查詢結果截圖檔名
+    paymentAIO: "8A", //全方位金流付款結果頁面截圖檔名
+    paymentWCBackStage: "8B", //WC 訂單內頁截圖檔名
+    paymentECPayBackStage: "8C", //廠商管理後台查詢結果截圖檔名
+    needLogiScreenshot: false,
+    needInvoiceScreenshot: false,
   }),
+
   test007: createTest({
+    ...defaulttest000,
     beforeSetupOption: 2,
-    productID: allconsts.productIDHigh,
-    purchaseOption: sharedActions.aioCheckOutCreditCard,
-    invoiceTypeSelect: "p",
-    carrierTypeSelect: "0",
-    logisticsOption: allconsts.ecpayOptions.logisticsPost,
     paymentOption: allconsts.ecpayOptions.paymentCreditDCA,
-    paymentScreenshotAIO: "9A", //全方位金流付款結果頁面截圖檔名
-    paymentScreenshotWCBackStage: "9B", //WC 訂單內頁截圖檔名
-    paymentScreenshotECPayBackStage: "9C", //廠商管理後台查詢結果截圖檔名
+    paymentAIO: "9A", //全方位金流付款結果頁面截圖檔名
+    paymentWCBackStage: "9B", //WC 訂單內頁截圖檔名
+    paymentECPayBackStage: "9C", //廠商管理後台查詢結果截圖檔名
+    needLogiScreenshot: false,
+    needInvoiceScreenshot: false,
   }),
+
   test008: createTest({
+    ...defaulttest000,
     beforeSetupOption: 3,
-    productID: allconsts.productIDHigh,
-    purchaseOption: sharedActions.aioCheckOutCreditCard,
-    invoiceTypeSelect: "p",
-    carrierTypeSelect: "0",
-    logisticsOption: allconsts.ecpayOptions.logisticsPost,
     paymentOption: allconsts.ecpayOptions.paymentCreditDCA,
-    paymentScreenshotAIO: "10A", //全方位金流付款結果頁面截圖檔名
-    paymentScreenshotWCBackStage: "10B", //WC 訂單內頁截圖檔名
-    paymentScreenshotECPayBackStage: "10C", //廠商管理後台查詢結果截圖檔名
+    paymentAIO: "10A", //全方位金流付款結果頁面截圖檔名
+    paymentWCBackStage: "10B", //WC 訂單內頁截圖檔名
+    paymentECPayBackStage: "10C", //廠商管理後台查詢結果截圖檔名
+    needLogiScreenshot: false,
+    needInvoiceScreenshot: false,
   }),
 
   test009: createTest({
+    ...defaulttest000,
     beforeSetupOption: false,
     productID: allconsts.productIDVirtual,
-    purchaseOption: sharedActions.webATM,
-    invoiceTypeSelect: "p",
-    carrierTypeSelect: "0",
+    paymentAction: sharedActions.webATM,
     // logisticsOption: allconsts.ecpayOptions.logistics711,
     paymentOption: allconsts.ecpayOptions.paymentWebatm,
-    paymentScreenshotAIO: "12A", //全方位金流付款結果頁面截圖檔名
-    paymentScreenshotWCBackStage: "12B", //WC 訂單內頁截圖檔名
-    paymentScreenshotECPayBackStage: "12C", //廠商管理後台查詢結果截圖檔名
+    paymentAIO: "12A", //全方位金流付款結果頁面截圖檔名
+    paymentWCBackStage: "12B", //WC 訂單內頁截圖檔名
+    paymentECPayBackStage: "12C", //廠商管理後台查詢結果截圖檔名
+    needLogiScreenshot: false,
+    needInvoiceScreenshot: false,
   }),
 
   test010: createTest({
+    ...defaulttest000,
     beforeSetupOption: false,
     productID: allconsts.productIDLow,
-    purchaseOption: sharedActions.ATM,
-    invoiceTypeSelect: "p",
-    carrierTypeSelect: "0",
-    logisticsOption: allconsts.ecpayOptions.logisticsTcat,
+    paymentAction: sharedActions.ATM,
     paymentOption: allconsts.ecpayOptions.paymentAtm,
-    paymentScreenshotAIO: "13A", //全方位金流付款結果頁面截圖檔名
-    paymentScreenshotMock: "13B",
-    paymentScreenshotWCBackStage: "13C", //WC 訂單內頁截圖檔名
-    paymentScreenshotECPayBackStage: "13D", //廠商管理後台查詢結果截圖檔名
+    paymentAIO: "13A", //全方位金流付款結果頁面截圖檔名
+    paymentMock: "13B",
+    paymentWCBackStage: "13C", //WC 訂單內頁截圖檔名
+    paymentECPayBackStage: "13D", //廠商管理後台查詢結果截圖檔名
   }),
 
   test011: createTest({
+    ...defaulttest000,
     beforeSetupOption: false,
-    productID: allconsts.productIDHigh,
-    purchaseOption: sharedActions.CVS,
-    invoiceTypeSelect: "p",
-    carrierTypeSelect: "0",
-    logisticsOption: allconsts.ecpayOptions.logisticsTcat,
+    paymentAction: sharedActions.CVS,
     paymentOption: allconsts.ecpayOptions.paymentCvs,
-    paymentScreenshotAIO: "14A", //全方位金流付款結果頁面截圖檔名
-    paymentScreenshotMock: "14B",
-    paymentScreenshotWCBackStage: "14C", //WC 訂單內頁截圖檔名
-    paymentScreenshotECPayBackStage: "14D", //廠商管理後台查詢結果截圖檔名
+    paymentAIO: "14A", //全方位金流付款結果頁面截圖檔名
+    paymentMock: "14B",
+    paymentWCBackStage: "14C", //WC 訂單內頁截圖檔名
+    paymentECPayBackStage: "14D", //廠商管理後台查詢結果截圖檔名
   }),
 
   test012: createTest({
+    ...defaulttest000,
     beforeSetupOption: false,
-    productID: allconsts.productIDHigh,
-    purchaseOption: sharedActions.BARCODE,
-    invoiceTypeSelect: "p",
-    carrierTypeSelect: "0",
-    logisticsOption: allconsts.ecpayOptions.logisticsTcat,
+    paymentAction: sharedActions.BARCODE,
     paymentOption: allconsts.ecpayOptions.paymentBarcode,
-    paymentScreenshotAIO: "15A", //全方位金流付款結果頁面截圖檔名
-    paymentScreenshotMock: "15B",
-    paymentScreenshotWCBackStage: "15C", //WC 訂單內頁截圖檔名
-    paymentScreenshotECPayBackStage: "15D", //廠商管理後台查詢結果截圖檔名
+    paymentAIO: "15A", //全方位金流付款結果頁面截圖檔名
+    paymentMock: "15B",
+    paymentWCBackStage: "15C", //WC 訂單內頁截圖檔名
+    paymentECPayBackStage: "15D", //廠商管理後台查詢結果截圖檔名
   }),
 
   test013: createTest({
+    ...defaulttest000,
     beforeSetupOption: false,
-    productID: allconsts.productIDHigh,
-    purchaseOption: sharedActions.TWQR,
-    invoiceTypeSelect: "p",
-    carrierTypeSelect: "0",
-    logisticsOption: allconsts.ecpayOptions.logisticsTcat,
+    paymentAction: sharedActions.TWQR,
     paymentOption: allconsts.ecpayOptions.paymentTwqr,
-    paymentScreenshotAIO: "16A", //全方位金流付款結果頁面截圖檔名
-    paymentScreenshotWCBackStage: "16B", //WC 訂單內頁截圖檔名
-    paymentScreenshotECPayBackStage: "16C", //廠商管理後台查詢結果截圖檔名
+    paymentAIO: "16A", //全方位金流付款結果頁面截圖檔名
+    paymentWCBackStage: "16B", //WC 訂單內頁截圖檔名
+    paymentECPayBackStage: "16C", //廠商管理後台查詢結果截圖檔名
   }),
 
   test014: createTest({
+    ...defaulttest000,
     beforeSetupOption: false,
-    productID: allconsts.productIDHigh,
-    purchaseOption: sharedActions.BNPL,
-    invoiceTypeSelect: "p",
-    carrierTypeSelect: "0",
-    logisticsOption: allconsts.ecpayOptions.logisticsTcat,
+    paymentAction: sharedActions.BNPLYurich,
     paymentOption: allconsts.ecpayOptions.paymentBnpl,
-    paymentScreenshotAIO: "17A", //全方位金流付款結果頁面截圖檔名
-    paymentScreenshotWCBackStage: "17B", //WC 訂單內頁截圖檔名
-    paymentScreenshotECPayBackStage: "17C", //廠商管理後台查詢結果截圖檔名
+    paymentAIO: "17A", //全方位金流付款結果頁面截圖檔名
+    paymentWCBackStage: "17B", //WC 訂單內頁截圖檔名
+    paymentECPayBackStage: "17C", //廠商管理後台查詢結果截圖檔名
+    needLogiScreenshot: false,
+    needInvoiceScreenshot: false,
   }),
 
   test015: createTest({
+    ...defaulttest000,
     beforeSetupOption: false,
-    productID: allconsts.productIDHigh,
-    purchaseOption: sharedActions.WeiXin,
-    invoiceTypeSelect: "p",
-    carrierTypeSelect: "0",
-    logisticsOption: allconsts.ecpayOptions.logisticsTcat,
+    paymentAction: sharedActions.WeiXin,
     paymentOption: allconsts.ecpayOptions.paymentWeixin,
-    paymentScreenshotAIO: "18A", //全方位金流付款結果頁面截圖檔名
-    paymentScreenshotWCBackStage: "18B", //WC 訂單內頁截圖檔名
-    paymentScreenshotECPayBackStage: "18C", //廠商管理後台查詢結果截圖檔名
-    
+    paymentAIO: "19A", //全方位金流付款結果頁面截圖檔名
+    paymentWCBackStage: "19B", //WC 訂單內頁截圖檔名
+    paymentECPayBackStage: "19C", //廠商管理後台查詢結果截圖檔名
+    needLogiScreenshot: false,
+    needInvoiceScreenshot: false,
+
   }),
 
   test016: createTest({
+    ...defaulttest000,
     beforeSetupOption: true,
-    productID: allconsts.productIDHigh,
-    invoiceTypeSelect: "p",
-    carrierTypeSelect: "0",
-    logisticsOption: allconsts.ecpayOptions.logistics711,
     paymentOption: allconsts.ecpayOptions.paymentCod,
-    logisticsScreenshotWCBackStage: `${
-      logisticsType === "C2C" ? "50A" : "62A"
-    }`, //WC 訂單內頁截圖檔名
-    logisticsScreenshotECPayBackStage: `${
-      logisticsType === "C2C" ? "50B" : "62B"
-    }`, //廠商管理後台查詢結果截圖檔名
-    invoiceScreenshotWCBackStage: "invoiceScreenshotWCBackStage",
-    invoiceScreenshotECPayBackStage: "invoiceScreenshotECPayBackStage",
+    paymentAction: false,
+    logisticsOption: allconsts.ecpayOptions.logistics711,
+    logisticsWCBackStage: `${config.logisticsType === "C2C" ? "52A" : "64A"
+      }`, //WC 訂單內頁截圖檔名
+    logisticsECPayBackStage: `${config.logisticsType === "C2C" ? "52B" : "64B"
+      }`, //廠商管理後台查詢結果截圖檔名
+
+    needInvoiceScreenshot: false,
+
   }),
 
   test017: createTest({
+    ...defaulttest000,
     beforeSetupOption: false,
-    productID: allconsts.productIDHigh,
-    invoiceTypeSelect: "p",
-    carrierTypeSelect: "0",
-    logisticsOption: allconsts.ecpayOptions.logisticsFamily,
     paymentOption: allconsts.ecpayOptions.paymentCod,
+    paymentAction: false,
+    logisticsOption: allconsts.ecpayOptions.logisticsFamily,
+    logisticsWCBackStage: `${config.logisticsType === "C2C" ? "55A" : "67A"
+      }`, //WC 訂單內頁截圖檔名
+    logisticsECPayBackStage: `${config.logisticsType === "C2C" ? "55B" : "67B"
+      }`, //廠商管理後台查詢結果截圖檔名
+
+    needInvoiceScreenshot: false,
   }),
 
   test018: createTest({
+    ...defaulttest000,
     beforeSetupOption: false,
-    productID: allconsts.productIDHigh,
-    invoiceTypeSelect: "p",
+    paymentOption: allconsts.ecpayOptions.paymentCod,
+    paymentAction: false,
     carrierTypeSelect: "0",
     logisticsOption: allconsts.ecpayOptions.logisticsHilife,
-    paymentOption: allconsts.ecpayOptions.paymentCod,
+    logisticsWCBackStage: `${config.logisticsType === "C2C" ? "58A" : "70A"
+      }`, //WC 訂單內頁截圖檔名
+    logisticsECPayBackStage: `${config.logisticsType === "C2C" ? "58B" : "70B"
+      }`, //廠商管理後台查詢結果截圖檔名
   }),
 
   test019: createTest({
+    ...defaulttest000,
     beforeSetupOption: false,
-    productID: allconsts.productIDHigh,
-    invoiceTypeSelect: "p",
-    carrierTypeSelect: "0",
-    logisticsOption: allconsts.ecpayOptions.logisticsOkmart,
     paymentOption: allconsts.ecpayOptions.paymentCod,
+    paymentAction: false,
+    logisticsOption: allconsts.ecpayOptions.logisticsOkmart,
+    logisticsWCBackStage: "61A",
+    logisticsECPayBackStage: "61B",
+      needInvoiceScreenshot: false,
+
   }),
+
+  test020: createTest({
+    ...defaulttest000,
+    beforeSetupOption: false,
+    paymentOption: allconsts.ecpayOptions.paymentCod,
+    paymentAction: false,
+    logisticsOption: allconsts.ecpayOptions.logisticsTcat,
+    logisticsWCBackStage: "74A",
+    logisticsECPayBackStage: "74B",
+      needInvoiceScreenshot: false,
+  }),
+
+  test021a: createTest({ //無卡分期：交易已核准但尚未請款
+    ...defaulttest000,
+    beforeSetupOption: false,
+    paymentAction: sharedActions.BNPLZingala,
+    paymentOption: allconsts.ecpayOptions.paymentBnpl,
+    bnplOption: "18A",
+    paymentAIO: "18B", //全方位金流付款結果頁面截圖檔名
+    paymentWCBackStage: "18C", //WC 訂單內頁截圖檔名
+    paymentECPayBackStage: false, //廠商管理後台查詢結果截圖檔名
+    needECPayPaymentScreeshot: false,
+    needLogiScreenshot: false,
+    needInvoiceScreenshot: false,
+  }),
+
+    test021b: createTest({ //無卡分期：交易已核准但尚未請款
+    ...defaulttest000,
+    beforeSetupOption: false,
+    paymentAction: sharedActions.BNPLZingala,
+    paymentOption: allconsts.ecpayOptions.paymentBnpl,
+    bnplOption: "18D",
+    paymentAIO: "18E", //全方位金流付款結果頁面截圖檔名
+    paymentWCBackStage: "18F", //WC 訂單內頁截圖檔名
+    paymentECPayBackStage: false, //廠商管理後台查詢結果截圖檔名
+    needECPayPaymentScreeshot: false,
+   needLogiScreenshot: false,
+    needInvoiceScreenshot: false,
+  }),
+
+      test021c: createTest({ //無卡分期：交易已核准但尚未請款
+    ...defaulttest000,
+    beforeSetupOption: false,
+    paymentAction: sharedActions.BNPLZingala,
+    paymentOption: allconsts.ecpayOptions.paymentBnpl,
+    bnplOption: "18G",
+    paymentAIO: "18H", //全方位金流付款結果頁面截圖檔名
+    paymentWCBackStage: "18I", //WC 訂單內頁截圖檔名
+    paymentECPayBackStage: false, //廠商管理後台查詢結果截圖檔名
+    needECPayPaymentScreeshot: false,
+    needLogiScreenshot: false,
+    needInvoiceScreenshot: false,
+  }),
+
+
+
+
 };
 
 export default alltests;

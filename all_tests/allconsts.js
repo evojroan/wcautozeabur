@@ -1,10 +1,9 @@
-
 import dotenv from 'dotenv';
 dotenv.config();
 
-export default {
+let allconsts= {
   baseURL: process.env.baseURL,
- 
+
   WCLogin: { WC_UserName: process.env.WC_UserName, WC_PassWord: process.env.WC_PassWord },
   ECPayLogin: {
     Payment: {
@@ -51,9 +50,9 @@ export default {
   // 結帳頁面的收件者資料
   wcInput: {
     email: "123@test.com",
-    shippingFirstName: "Alice",
-    shippingLastName: "Lin",
-    shippingAddress1: "台北市南港區三重路19之2號D棟6樓",
+    shippingFirstName: "John",
+    shippingLastName: "Doe",
+    shippingAddress1: "台北市南港區成功路一段58號3樓",
     shippingCity: "南港區",
     shippingState: "台北市",
     shippingPostcode: "115",
@@ -86,16 +85,8 @@ export default {
   },
 
   // 物流選項
+
   ecpayOptions: {
-    // logisticsFree: "free_shipping:1",
-    // logistics711: "Wooecpay_Logistic_CVS_711:1",
-    // logisticsFamily: "Wooecpay_Logistic_CVS_Family:3",
-    // logisticsHilife: "Wooecpay_Logistic_CVS_Hilife:2",
-    // logisticsOkmart: "Wooecpay_Logistic_CVS_Okmart:4",
-    // logisticsTcat: "Wooecpay_Logistic_Home_Tcat:5",
-    // logisticsPost: "Wooecpay_Logistic_Home_Post:6",
-
-
     logisticsFree: "free_shipping:1",
     logistics711: "Wooecpay_Logistic_CVS_711",
     logisticsFamily: "Wooecpay_Logistic_CVS_Family",
@@ -105,7 +96,7 @@ export default {
     logisticsPost: "Wooecpay_Logistic_Home_Post",
 
     // 付款選項
-    paymentCod: "cod",
+    paymentCod: "cod",//貨到付款
     paymentCredit: "Wooecpay_Gateway_Credit",
     paymentCreditInstallment: "Wooecpay_Gateway_Credit_Installment",
     paymentCreditDCA: "Wooecpay_Gateway_Dca",
@@ -116,6 +107,14 @@ export default {
     paymentDca: "Wooecpay_Gateway_Dca",
     paymentTwqr: "Wooecpay_Gateway_Twqr",
     paymentBnpl: "Wooecpay_Gateway_Bnpl",
-    paymentWeixin:"Wooecpay_Gateway_Weixin"
+    paymentWeixin: "Wooecpay_Gateway_Weixin"
   },
+
+
+ 
 };
+
+// 將 test000 配置提取為獨立常數
+
+
+export default allconsts

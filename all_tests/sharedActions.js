@@ -1,87 +1,26 @@
 import alltests from "./alltests.js";
 import allconsts from "./allconsts.js";
-import { test,logisticsType,autoIssue } from "./config.js";
-import fs from "fs"; // 引入 Node.js 的檔案系統模組
-import path from "path"; // 引入 Node.js 的路徑模組
+import config from "./config.js";
 import { createWorker } from "tesseract.js";
 import sharp from "sharp";
-
 import dotenv from 'dotenv';
+
 dotenv.config();
 
-// --- 新增日誌記錄功能 ---
-let logFilePath = null; // 將 logFilePath 的計算延遲
-const originalConsoleLog = console.log; // 保存原始的 console.log 功能
 
-console.log = function (...args) {
-  // 第一次呼叫 console.log 時才計算 logFilePath 並確保目錄存在
-  if (!logFilePath) {
-    try {
-      // 檢查 test 是否已定義
-      if (typeof test === "undefined") {
-        throw new Error("從 test000.js 匯入的 'test' 變數尚未準備好。");
-      }
-      const recordsDir = path.join(process.cwd(), "records", test);
-      // 確保日誌目錄存在，如果不存在則創建 (recursive: true 會創建所有層級的目錄)
-      if (!fs.existsSync(recordsDir)) {
-        fs.mkdirSync(recordsDir, { recursive: true });
-        originalConsoleLog(`已創建日誌目錄: ${recordsDir}`); // 增加提示訊息
-      }
-      logFilePath = path.join(recordsDir, `${test}_log.txt`); // 計算完整的日誌檔案路徑
-    } catch (error) {
-      originalConsoleLog("初始化日誌檔案路徑時發生錯誤:", error);
-      // 如果初始化失敗，仍然執行原始的 console.log
-      originalConsoleLog.apply(console, args);
-      return; // 終止此次日誌記錄到檔案的動作
-    }
-  }
-
-  const timestamp = new Date().toISOString(); // 獲取 ISO 格式的時間戳
-  // 將所有參數轉換為字串，物件會用 JSON.stringify 處理
-  const message = args
-    .map((arg) => {
-      if (typeof arg === "object" && arg !== null) {
-        try {
-          return JSON.stringify(arg, null, 2); // 美化 JSON 輸出
-        } catch (e) {
-          return "[無法序列化的物件]"; // 處理循環引用等錯誤
-        }
-      }
-      return String(arg); // 其他類型直接轉字串
-    })
-    .join(" "); // 用空格連接多個參數
-
-  const logLine = `[${timestamp}] ${message}\n`; // 組合日誌行
-
-  try {
-    // 確保 logFilePath 已經成功設定
-    if (logFilePath) {
-      fs.appendFileSync(logFilePath, logLine); // 同步寫入檔案（追加模式）
-    } else {
-      originalConsoleLog("日誌檔案路徑未設定，無法寫入檔案。");
-    }
-  } catch (err) {
-    // 如果寫入檔案失敗，在原始 console 輸出錯誤訊息
-    originalConsoleLog("無法寫入日誌檔案:", err, "路徑:", logFilePath);
-  }
-
-  // 執行原始的 console.log，確保訊息仍然顯示在終端機
-  originalConsoleLog.apply(console, args);
-};
-// --- 日誌記錄功能結束 ---
 
 // --- 安全截圖功能 ---
 async function safeScreenshot(page, locator, options = {}) {
-  const { 
-    path, 
-    timeout = 15000, 
-    retries = 2, 
+  const {
+    path,
+    timeout = 15000,
+    retries = 2,
     fallbackToPage = true,
-    waitForStable = true 
+    waitForStable = true
   } = options;
-  
+
   let attempt = 0;
-  
+
   while (attempt <= retries) {
     try {
       if (waitForStable && locator) {
@@ -89,7 +28,7 @@ async function safeScreenshot(page, locator, options = {}) {
         await locator.waitFor({ state: 'visible', timeout: timeout / 2 });
         await page.waitForTimeout(300); // 減少等待時間，從1000ms降至300ms
       }
-      
+
       if (locator) {
         // 元素截圖
         await locator.screenshot({ path, timeout });
@@ -97,14 +36,14 @@ async function safeScreenshot(page, locator, options = {}) {
         // 頁面截圖
         await page.screenshot({ path, timeout, fullPage: true });
       }
-      
+
       console.log(`截圖成功: ${path}`);
       return true;
-      
+
     } catch (error) {
       attempt++;
       console.log(`截圖失敗 (第${attempt}次嘗試): ${error.message}`);
-      
+
       if (attempt <= retries) {
         console.log("等待後重試...");
         await page.waitForTimeout(2000);
@@ -112,10 +51,10 @@ async function safeScreenshot(page, locator, options = {}) {
         // 如果是元素截圖失敗，嘗試頁面截圖
         try {
           const fallbackPath = path.replace('.png', '_fullpage.png');
-          await page.screenshot({ 
-            path: fallbackPath, 
-            timeout, 
-            fullPage: true 
+          await page.screenshot({
+            path: fallbackPath,
+            timeout,
+            fullPage: true
           });
           console.log(`已改用頁面截圖: ${fallbackPath}`);
           return true;
@@ -142,20 +81,20 @@ async function safeWaitForSelector(page, selector, options = {}) {
     reloadOnFail = true,
     description = selector
   } = options;
-  
+
   let attempt = 0;
-  
+
   while (attempt < retries) {
     try {
       console.log(`等待元素 ${description}... (嘗試 ${attempt + 1}/${retries})`);
       await page.waitForSelector(selector, { state, timeout });
       console.log(`元素 ${description} 已載入`);
       return true;
-      
+
     } catch (error) {
       attempt++;
       console.log(`等待元素 ${description} 失敗 (第${attempt}次): ${error.message}`);
-      
+
       if (attempt < retries) {
         if (reloadOnFail) {
           console.log("嘗試重新整理頁面...");
@@ -167,7 +106,7 @@ async function safeWaitForSelector(page, selector, options = {}) {
       }
     }
   }
-  
+
   console.log(`已達最大重試次數，元素 ${description} 仍未出現`);
   return false;
 }
@@ -176,16 +115,16 @@ async function safeWaitForSelector(page, selector, options = {}) {
 // --- 頁面診斷功能 ---
 async function diagnosePage(page, test, description = "頁面診斷") {
   console.log(`🔬 開始${description}...`);
-  
+
   try {
     // 1. 截圖當前頁面狀態
-    const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0];
-    await page.screenshot({ 
-      path: `records/${test}/診斷-${description}-${timestamp}.png`,
-      fullPage: true 
-    });
-   
-    
+    // const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0];
+    // await page.screenshot({ 
+    //   path: `records/${test}/診斷-${description}-${timestamp}.png`,
+    //   fullPage: true 
+    // });
+
+
     // 2. 獲取頁面基本資訊
     const pageInfo = await page.evaluate(() => ({
       url: window.location.href,
@@ -193,8 +132,8 @@ async function diagnosePage(page, test, description = "頁面診斷") {
       readyState: document.readyState,
       hasErrors: !!document.querySelector('.woocommerce-error, .error, [class*="error"]')
     }));
-   
-    
+
+
     // 3. 檢查所有表單元素
     const formElements = await page.$$eval('select, input[type="text"], input[type="email"], input[type="radio"], input[type="checkbox"]', elements =>
       elements.map(el => ({
@@ -207,8 +146,8 @@ async function diagnosePage(page, test, description = "頁面診斷") {
         options: el.tagName === 'SELECT' ? Array.from(el.options).map(opt => ({ value: opt.value, text: opt.textContent.trim() })) : null
       }))
     );
-  
-    
+
+
     // 4. 檢查是否有錯誤訊息
     const errorMessages = await page.$$eval('.woocommerce-error, .error, [class*="error"]', elements =>
       elements.map(el => el.textContent.trim()).filter(text => text.length > 0)
@@ -216,7 +155,7 @@ async function diagnosePage(page, test, description = "頁面診斷") {
     if (errorMessages.length > 0) {
       console.log("❌ 發現錯誤訊息:", errorMessages);
     }
-    
+
   } catch (error) {
     console.log("診斷過程發生錯誤:", error.message);
   }
@@ -226,267 +165,307 @@ async function diagnosePage(page, test, description = "頁面診斷") {
 //登入綠界廠商管理後台的圖片辨識 - Captcha
 async function preprocessImage(imageBuffer, method = 'aggressive') {
   try {
-      console.log(`開始圖像預處理 (${method} 模式)...`);
-      
-      let processedBuffer;
-      
-      if (method === 'aggressive') {
-          // 激進模式 - 強力移除線條
-          processedBuffer = await sharp(imageBuffer)
-              .greyscale()
-              .resize(300, 120, { // 更大的放大倍數
-                  kernel: sharp.kernel.cubic,
-                  fit: 'fill'
-              })
-              .normalize()
-              .gamma(1.5) // 更強的 gamma 調整
-              .blur(0.3) // 輕微模糊以連接斷開的字符
-              .threshold(100) // 更低的閾值
-              .median(2) // 更強的中值濾波
-              // 連續使用多個卷積核移除不同方向的線條
-              .convolve({ // 移除水平線
-                  width: 5,
-                  height: 1,
-                  kernel: [-1, -1, -1, -1, -1]
-              })
-              .convolve({ // 移除垂直線
-                  width: 1,
-                  height: 5,
-                  kernel: [-1, -1, -1, -1, -1]
-              })
-              .convolve({ // 銳化數字邊緣
-                  width: 3,
-                  height: 3,
-                  kernel: [
-                      -1, -2, -1,
-                      -2, 13, -2,
-                      -1, -2, -1
-                  ]
-              })
-              .threshold(130)
-              .median(1) // 最後清理
-              .png()
-              .toBuffer();
-      } else if (method === 'conservative') {
-          // 保守模式 - 溫和處理
-          processedBuffer = await sharp(imageBuffer)
-              .greyscale()
-              .resize(240, 96, {
-                  kernel: sharp.kernel.nearest,
-                  fit: 'fill'
-              })
-              .normalize()
-              .gamma(1.3)
-              .threshold(115)
-              .median(1)
-              .convolve({
-                  width: 3,
-                  height: 3,
-                  kernel: [
-                      0, -1, 0,
-                      -1, 5, -1,
-                      0, -1, 0
-                  ]
-              })
-              .threshold(128)
-              .png()
-              .toBuffer();
-      } else {
-          // 原始模式 - 基本處理
-          processedBuffer = await sharp(imageBuffer)
-              .greyscale()
-              .resize(200, 80, {
-                  kernel: sharp.kernel.nearest,
-                  fit: 'fill'
-              })
-              .normalize()
-              .threshold(120)
-              .png()
-              .toBuffer();
+    console.log(`開始圖像預處理 (${method} 模式)...`);
+
+    let processedBuffer;
+
+    if (method === 'aggressive') {
+      // 激進模式 - 強力移除線條（修正卷積核）
+      try {
+        processedBuffer = await sharp(imageBuffer)
+          .greyscale()
+          .resize(300, 120, {
+            kernel: sharp.kernel.cubic,
+            fit: 'fill'
+          })
+          .normalize()
+          .gamma(1.5)
+          .blur(0.3)
+          .threshold(100)
+          .median(2)
+          // 使用正確的卷積核配置
+          .convolve({
+            width: 3,
+            height: 3,
+            kernel: [
+              0, -1, 0,
+              -1, 5, -1,
+              0, -1, 0
+            ]
+          })
+          .threshold(130)
+          .median(1)
+          .png()
+          .toBuffer();
+      } catch (convError) {
+        console.log(`激進模式卷積處理失敗，改用簡化處理: ${convError.message}`);
+        // 降級處理：不使用卷積
+        processedBuffer = await sharp(imageBuffer)
+          .greyscale()
+          .resize(300, 120, {
+            kernel: sharp.kernel.cubic,
+            fit: 'fill'
+          })
+          .normalize()
+          .gamma(1.5)
+          .blur(0.3)
+          .threshold(100)
+          .median(2)
+          .threshold(130)
+          .median(1)
+          .png()
+          .toBuffer();
       }
-      
-      console.log(`圖像預處理完成 (${method} 模式)`);
-      return processedBuffer;
+    } else if (method === 'conservative') {
+      // 保守模式 - 溫和處理
+      try {
+        processedBuffer = await sharp(imageBuffer)
+          .greyscale()
+          .resize(240, 96, {
+            kernel: sharp.kernel.nearest,
+            fit: 'fill'
+          })
+          .normalize()
+          .gamma(1.3)
+          .threshold(115)
+          .median(1)
+          .convolve({
+            width: 3,
+            height: 3,
+            kernel: [
+              0, -1, 0,
+              -1, 5, -1,
+              0, -1, 0
+            ]
+          })
+          .threshold(128)
+          .png()
+          .toBuffer();
+      } catch (convError) {
+        console.log(`保守模式卷積處理失敗，改用簡化處理: ${convError.message}`);
+        processedBuffer = await sharp(imageBuffer)
+          .greyscale()
+          .resize(240, 96, {
+            kernel: sharp.kernel.nearest,
+            fit: 'fill'
+          })
+          .normalize()
+          .gamma(1.3)
+          .threshold(115)
+          .median(1)
+          .threshold(128)
+          .png()
+          .toBuffer();
+      }
+    } else {
+      // 原始模式 - 基本處理
+      processedBuffer = await sharp(imageBuffer)
+        .greyscale()
+        .resize(200, 80, {
+          kernel: sharp.kernel.nearest,
+          fit: 'fill'
+        })
+        .normalize()
+        .threshold(120)
+        .png()
+        .toBuffer();
+    }
+
+    console.log(`圖像預處理完成 (${method} 模式)`);
+    return processedBuffer;
   } catch (error) {
-      console.error("圖像預處理失敗:", error);
+    console.error("圖像預處理失敗:", error.message);
+    // 最終降級：返回基本處理結果
+    try {
+      console.log("嘗試最基本的圖像處理...");
+      return await sharp(imageBuffer)
+        .greyscale()
+        .resize(200, 80)
+        .normalize()
+        .threshold(120)
+        .png()
+        .toBuffer();
+    } catch (fallbackError) {
+      console.error("基本處理也失敗，返回原始圖像");
       return imageBuffer;
+    }
   }
 }
 
 async function recognizeWithMultipleConfigs(imageBuffer) {
   const configs = [
-      {
-          name: "激進清理配置",
-          params: {
-              tessedit_char_whitelist: "0123456789",
-              tessedit_pageseg_mode: "6",
-              tessedit_ocr_engine_mode: "1",
-              classify_enable_learning: "0",
-              classify_enable_adaptive_matcher: "0",
-              textord_noise_rejwords: "1",
-              textord_noise_rejrows: "1",
-              textord_noise_normratio: "2",
-              textord_noise_syfract: "0.2",
-              textord_noise_sizefract: "0.1"
-          }
-      },
-      {
-          name: "單字模式強化",
-          params: {
-              tessedit_char_whitelist: "0123456789",
-              tessedit_pageseg_mode: "8",
-              tessedit_ocr_engine_mode: "2",
-              classify_max_rating: "10.0",
-              classify_max_certainty_margin: "4.5",
-              textord_noise_rejwords: "1",
-              edges_max_children_per_outline: "10"
-          }
-      },
-      {
-          name: "原始引擎配置",
-          params: {
-              tessedit_char_whitelist: "0123456789",
-              tessedit_pageseg_mode: "7",
-              tessedit_ocr_engine_mode: "0", // 只使用傳統引擎
-              classify_enable_learning: "0",
-              textord_noise_rejwords: "1",
-              textord_noise_rejrows: "1"
-          }
-      },
-      {
-          name: "混合引擎配置",
-          params: {
-              tessedit_char_whitelist: "0123456789",
-              tessedit_pageseg_mode: "13", // Raw line. Treat the image as a single text line
-              tessedit_ocr_engine_mode: "2",
-              preserve_interword_spaces: "0",
-              textord_noise_rejwords: "1"
-          }
-      },
-      {
-          name: "字符分割配置",
-          params: {
-              tessedit_char_whitelist: "0123456789",
-              tessedit_pageseg_mode: "10", // Treat the image as a single character
-              tessedit_ocr_engine_mode: "1",
-              classify_enable_learning: "0"
-          }
+    {
+      name: "激進清理配置",
+      params: {
+        tessedit_char_whitelist: "0123456789",
+        tessedit_pageseg_mode: "6",
+        tessedit_ocr_engine_mode: "1",
+        classify_enable_learning: "0",
+        classify_enable_adaptive_matcher: "0",
+        textord_noise_rejwords: "1",
+        textord_noise_rejrows: "1",
+        textord_noise_normratio: "2",
+        textord_noise_syfract: "0.2",
+        textord_noise_sizefract: "0.1"
       }
+    },
+    {
+      name: "單字模式強化",
+      params: {
+        tessedit_char_whitelist: "0123456789",
+        tessedit_pageseg_mode: "8",
+        tessedit_ocr_engine_mode: "2",
+        classify_max_rating: "10.0",
+        classify_max_certainty_margin: "4.5",
+        textord_noise_rejwords: "1",
+        edges_max_children_per_outline: "10"
+      }
+    },
+    {
+      name: "原始引擎配置",
+      params: {
+        tessedit_char_whitelist: "0123456789",
+        tessedit_pageseg_mode: "7",
+        tessedit_ocr_engine_mode: "0", // 只使用傳統引擎
+        classify_enable_learning: "0",
+        textord_noise_rejwords: "1",
+        textord_noise_rejrows: "1"
+      }
+    },
+    {
+      name: "混合引擎配置",
+      params: {
+        tessedit_char_whitelist: "0123456789",
+        tessedit_pageseg_mode: "13", // Raw line. Treat the image as a single text line
+        tessedit_ocr_engine_mode: "2",
+        preserve_interword_spaces: "0",
+        textord_noise_rejwords: "1"
+      }
+    },
+    {
+      name: "字符分割配置",
+      params: {
+        tessedit_char_whitelist: "0123456789",
+        tessedit_pageseg_mode: "10", // Treat the image as a single character
+        tessedit_ocr_engine_mode: "1",
+        classify_enable_learning: "0"
+      }
+    }
   ];
 
   const results = [];
-  
+
   for (const config of configs) {
-      try {
-          console.log(`嘗試${config.name}識別...`);
-          const worker = await createWorker("eng", 1);
-          await worker.setParameters(config.params);
-          
-          const { data: { text, confidence } } = await worker.recognize(imageBuffer);
-          await worker.terminate();
-          
-          const cleanedText = text.replace(/\D/g, "");
-          
-          if (cleanedText.length >= 3 && cleanedText.length <= 5) { // 放寬條件
-              results.push({
-                  text: cleanedText,
-                  confidence: confidence,
-                  config: config.name,
-                  length: cleanedText.length
-              });
-              console.log(`${config.name}識別結果: ${cleanedText} (信心度: ${confidence.toFixed(2)}%, 長度: ${cleanedText.length})`);
-          }
-      } catch (error) {
-          console.error(`${config.name}識別失敗:`, error);
+    try {
+      console.log(`嘗試${config.name}識別...`);
+      const worker = await createWorker("eng", 1);
+      await worker.setParameters(config.params);
+
+      const { data: { text, confidence } } = await worker.recognize(imageBuffer);
+      await worker.terminate();
+
+      const cleanedText = text.replace(/\D/g, "");
+
+      if (cleanedText.length >= 3 && cleanedText.length <= 5) { // 放寬條件
+        results.push({
+          text: cleanedText,
+          confidence: confidence,
+          config: config.name,
+          length: cleanedText.length
+        });
+        console.log(`${config.name}識別結果: ${cleanedText} (信心度: ${confidence.toFixed(2)}%, 長度: ${cleanedText.length})`);
       }
+    } catch (error) {
+      console.error(`${config.name}識別失敗:`, error);
+    }
   }
-  
+
   if (results.length === 0) {
-      return null;
+    return null;
   }
-  
+
   // 優先選擇4位數的結果，其次選擇信心度最高的
   const fourDigitResults = results.filter(r => r.length === 4);
-  
+
   if (fourDigitResults.length > 0) {
-      const bestFourDigit = fourDigitResults.reduce((best, current) => 
-          current.confidence > best.confidence ? current : best
-      );
-      console.log(`最佳4位數結果: ${bestFourDigit.text} (${bestFourDigit.config}, 信心度: ${bestFourDigit.confidence.toFixed(2)}%)`);
-      return bestFourDigit.text;
-  }
-  
-  // 如果沒有4位數結果，選擇信心度最高的並調整
-  const bestResult = results.reduce((best, current) => 
+    const bestFourDigit = fourDigitResults.reduce((best, current) =>
       current.confidence > best.confidence ? current : best
+    );
+    console.log(`最佳4位數結果: ${bestFourDigit.text} (${bestFourDigit.config}, 信心度: ${bestFourDigit.confidence.toFixed(2)}%)`);
+    return bestFourDigit.text;
+  }
+
+  // 如果沒有4位數結果，選擇信心度最高的並調整
+  const bestResult = results.reduce((best, current) =>
+    current.confidence > best.confidence ? current : best
   );
-  
+
   let finalResult = bestResult.text;
   if (finalResult.length > 4) {
-      finalResult = finalResult.substring(0, 4);
-      console.log(`截取前4位: ${finalResult}`);
+    finalResult = finalResult.substring(0, 4);
+    console.log(`截取前4位: ${finalResult}`);
   } else if (finalResult.length === 3) {
-      // 如果只有3位，可能是識別遺漏，但仍然嘗試
-      console.log(`只識別到3位數字: ${finalResult}，將嘗試使用`);
+    // 如果只有3位，可能是識別遺漏，但仍然嘗試
+    console.log(`只識別到3位數字: ${finalResult}，將嘗試使用`);
   }
-  
+
   console.log(`最終識別結果: ${finalResult} (${bestResult.config}, 信心度: ${bestResult.confidence.toFixed(2)}%)`);
   return finalResult;
 }
 
 async function recognizeWithMultipleStrategies(captchaBuffer) {
   const strategies = [
-      { name: "激進預處理", preprocess: "aggressive" },
-      { name: "保守預處理", preprocess: "conservative" },
-      { name: "原始預處理", preprocess: "original" }
+    { name: "激進預處理", preprocess: "aggressive" },
+    { name: "保守預處理", preprocess: "conservative" },
+    { name: "原始預處理", preprocess: "original" }
   ];
-  
+
   const allResults = [];
-  
+
   for (const strategy of strategies) {
-      try {
-          console.log(`\n=== 嘗試${strategy.name} ===`);
-          const processedBuffer = await preprocessImage(captchaBuffer, strategy.preprocess);
-          
-          // 可選：保存調試圖像
-          // await saveDebugImage(processedBuffer, strategy.name);
-          
-          const result = await recognizeWithMultipleConfigs(processedBuffer);
-          
-          if (result && result.length >= 3) {
-              allResults.push({
-                  text: result,
-                  strategy: strategy.name,
-                  length: result.length
-              });
-              console.log(`${strategy.name}成功: ${result}`);
-              
-              // 如果得到4位數字，立即返回
-              if (result.length === 4) {
-                  console.log(`✅ ${strategy.name}獲得完美結果: ${result}`);
-                  return result;
-              }
-          } else {
-              console.log(`${strategy.name}失敗`);
-          }
-      } catch (error) {
-          console.error(`${strategy.name}出錯:`, error);
+    try {
+      console.log(`\n=== 嘗試${strategy.name} ===`);
+      const processedBuffer = await preprocessImage(captchaBuffer, strategy.preprocess);
+
+      // 可選：保存調試圖像
+      // await saveDebugImage(processedBuffer, strategy.name);
+
+      const result = await recognizeWithMultipleConfigs(processedBuffer);
+
+      if (result && result.length >= 3) {
+        allResults.push({
+          text: result,
+          strategy: strategy.name,
+          length: result.length
+        });
+        console.log(`${strategy.name}成功: ${result}`);
+
+        // 如果得到4位數字，立即返回
+        if (result.length === 4) {
+          console.log(`✅ ${strategy.name}獲得完美結果: ${result}`);
+          return result;
+        }
+      } else {
+        console.log(`${strategy.name}失敗`);
       }
+    } catch (error) {
+      console.error(`${strategy.name}出錯:`, error);
+    }
   }
-  
+
   // 如果沒有完美的4位數結果，選擇最佳的
   if (allResults.length > 0) {
-      // 優先選擇4位數，其次選擇最長的
-      const best = allResults.reduce((best, current) => {
-          if (best.length === 4 && current.length !== 4) return best;
-          if (best.length !== 4 && current.length === 4) return current;
-          return current.length >= best.length ? current : best;
-      });
-      
-      console.log(`\n🎯 多重策略最終結果: ${best.text} (${best.strategy})`);
-      return best.text.length === 4 ? best.text : (best.text + "0000").substring(0, 4);
+    // 優先選擇4位數，其次選擇最長的
+    const best = allResults.reduce((best, current) => {
+      if (best.length === 4 && current.length !== 4) return best;
+      if (best.length !== 4 && current.length === 4) return current;
+      return current.length >= best.length ? current : best;
+    });
+
+    console.log(`\n🎯 多重策略最終結果: ${best.text} (${best.strategy})`);
+    return best.text.length === 4 ? best.text : (best.text + "0000").substring(0, 4);
   }
-  
+
   return null;
 }
 
@@ -528,14 +507,14 @@ async function Captcha(page) {
       // 使用超級多重策略識別
       console.log("\n🚀 啟動超級多重策略識別系統...");
       let cleanedText = await recognizeWithMultipleStrategies(captchaBuffer);
-      
+
       // 如果多重策略失敗，使用終極備用方案
       if (!cleanedText || cleanedText.length < 3) {
         console.log("\n⚠️ 多重策略失敗，啟動終極備用識別...");
-        
+
         // 終極備用方案：嘗試不同的圖像處理組合
         const backupStrategies = [
-          { 
+          {
             name: "極度激進處理",
             process: async (buffer) => {
               return await sharp(buffer)
@@ -566,12 +545,12 @@ async function Captcha(page) {
             }
           }
         ];
-        
+
         for (const strategy of backupStrategies) {
           try {
             console.log(`嘗試${strategy.name}...`);
             const processedBuffer = await strategy.process(captchaBuffer);
-            
+
             const worker = await createWorker("eng", 1);
             await worker.setParameters({
               tessedit_char_whitelist: "0123456789",
@@ -579,10 +558,10 @@ async function Captcha(page) {
               tessedit_ocr_engine_mode: "1",
               classify_enable_learning: "0"
             });
-            
+
             const { data: { text } } = await worker.recognize(processedBuffer);
             await worker.terminate();
-            
+
             const backupResult = text.replace(/\D/g, "");
             if (backupResult.length >= 3) {
               cleanedText = backupResult.length === 4 ? backupResult : (backupResult + "0000").substring(0, 4);
@@ -593,7 +572,7 @@ async function Captcha(page) {
             console.error(`${strategy.name}失敗:`, error);
           }
         }
-        
+
         // 如果所有方法都失敗，使用原始方法作為最後手段
         if (!cleanedText || cleanedText.length < 3) {
           console.log("\n🔄 所有策略失敗，使用原始方法最後嘗試...");
@@ -604,7 +583,7 @@ async function Captcha(page) {
               tessedit_pageseg_mode: "8",
               tessedit_ocr_engine_mode: "1"
             });
-            
+
             const { data: { text } } = await worker.recognize(captchaBuffer);
             await worker.terminate();
             cleanedText = text.replace(/\D/g, "");
@@ -682,10 +661,17 @@ async function Captcha(page) {
 
 //所有自動化動作
 const sharedActions = {
+  // 新增：在每個測試開始時初始化日誌
+  initializeTest: async function (testName) {
+    originalConsoleLog(`\n========== 初始化測試: ${testName} ==========`);
+    setupTestLogger(testName);
+    originalConsoleLog(`========== 測試 ${testName} 已準備就緒 ==========\n`);
+  },
+
   //零、事先設定(未完成)
-  beforeSetup: async function (page, setUpOption) {
+  beforeSetup: async function (page, beforeSetupOption) {
     await page.goto(`${allconsts.baseURL}/wp-admin`);
-    switch (setUpOption) {
+    switch (beforeSetupOption) {
       case 1:
         console.log("beforeSetup=1");
         break;
@@ -696,7 +682,7 @@ const sharedActions = {
         console.log("beforeSetup=3");
         break;
       default:
-        console.log("未知的設定選項:", setUpOption);
+        console.log("未知的設定選項:", beforeSetupOption);
         break;
     }
   },
@@ -725,44 +711,44 @@ const sharedActions = {
       }
 
       // 2. 將商品加入購物車
-      console.log(`🛍️ 加入商品到購物車 (ID: ${alltests[test].productID})`);
+      console.log(`加入商品到購物車 (ID: ${alltests[test].productID})`);
       const addToCartBtn = `button[data-product_id="${alltests[test].productID}"]`;
-      
+
       const cartBtnReady = await safeWaitForSelector(page, addToCartBtn, {
         timeout: 10000,
         retries: 2,
         description: `加入購物車按鈕 (商品ID: ${alltests[test].productID})`
       });
-      
+
       if (!cartBtnReady) {
         await diagnosePage(page, test, "找不到加入購物車按鈕");
         throw new Error(`找不到商品ID ${alltests[test].productID} 的加入購物車按鈕`);
       }
-      
+
       await page.click(addToCartBtn);
       await page.waitForTimeout(2000); // 等待加入購物車完成
-      console.log("✅ 商品已加入購物車");
+      console.log("商品已加入購物車");
 
       // 3. 結帳
-      console.log("🛒 點擊結帳按鈕...");
+      console.log("點擊結帳按鈕...");
       await page.click('a:has-text("結帳")');
-      
+
       // 等待結帳頁面載入
-      console.log("⏳ 等待結帳頁面載入...");
+      console.log("等待結帳頁面載入...");
       await page.waitForTimeout(3000); // 增加等待時間
-      
+
       // 檢查是否成功跳轉到結帳頁面
       const currentUrl = page.url();
-    
-      
+
+
       if (!currentUrl.includes('checkout')) {
-        console.log("⚠️ 可能未正確跳轉到結帳頁面");
+        console.log("可能未正確跳轉到結帳頁面");
         await diagnosePage(page, test, "結帳頁面跳轉檢查");
       }
 
       //4. 結帳：發票開立
       console.log("🔍 開始尋找發票開立選項...");
-      
+
       // 嘗試主要選擇器
       let invoiceReady = await safeWaitForSelector(page, allconsts.invoiceOptions.invoiceTypeInput, {
         timeout: 15000,
@@ -770,14 +756,14 @@ const sharedActions = {
         reloadOnFail: false,
         description: `發票開立選項 (主要) (${allconsts.invoiceOptions.invoiceTypeInput})`
       });
-      
+
       let invoiceSelector = allconsts.invoiceOptions.invoiceTypeInput;
-      
+
       // 如果主要選擇器失敗，嘗試替代選擇器
       if (!invoiceReady) {
         console.log("⚠️ 主要發票選擇器失敗，嘗試替代選擇器...");
         const altSelectors = allconsts.invoiceOptions.invoiceTypeInputAlt.split(', ');
-        
+
         for (const altSelector of altSelectors) {
           console.log(`🔍 嘗試替代選擇器: ${altSelector}`);
           invoiceReady = await safeWaitForSelector(page, altSelector, {
@@ -786,7 +772,7 @@ const sharedActions = {
             reloadOnFail: false,
             description: `發票開立選項 (替代) (${altSelector})`
           });
-          
+
           if (invoiceReady) {
             invoiceSelector = altSelector;
             console.log(`✅ 替代選擇器成功: ${altSelector}`);
@@ -794,7 +780,7 @@ const sharedActions = {
           }
         }
       }
-      
+
       if (!invoiceReady) {
         await diagnosePage(page, test, "找不到發票選項");
         throw new Error(`無法找到發票開立選項，已嘗試所有選擇器`);
@@ -804,19 +790,18 @@ const sharedActions = {
         alltests[test].invoiceTypeSelect
       );
       console.log(
-        `選擇發票開立類型：${
-          alltests[test].invoiceTypeSelect === "c"
-            ? "公司"
-            : alltests[test].invoiceTypeSelect === "p"
+        `選擇發票開立類型：${alltests[test].invoiceTypeSelect === "c"
+          ? "公司"
+          : alltests[test].invoiceTypeSelect === "p"
             ? "個人"
             : alltests[test].invoiceTypeSelect === "d"
-            ? "捐贈"
-            : ""
+              ? "捐贈"
+              : ""
         }`
       );
 
       //5. 結帳：載具類型
-      console.log("🔍 開始尋找載具類型選項...");
+      console.log("開始尋找載具類型選項...");
       try {
         const carrierReady = await safeWaitForSelector(page, allconsts.invoiceOptions.carrierTypeInput, {
           timeout: 10000,
@@ -824,13 +809,13 @@ const sharedActions = {
           reloadOnFail: false,
           description: `載具類型選項 (${allconsts.invoiceOptions.carrierTypeInput})`
         });
-        
+
         if (carrierReady) {
           await page.selectOption(
             allconsts.invoiceOptions.carrierTypeInput,
             alltests[test].carrierTypeSelect
           );
-          console.log(`✅ 選擇載具類型：${alltests[test].carrierTypeSelect}`);
+          console.log(`選擇載具類型：${alltests[test].carrierTypeSelect}`);
         } else {
           console.log("⚠️ 載具類型選擇器不存在，跳過此步驟");
         }
@@ -889,51 +874,29 @@ const sharedActions = {
       } catch (error) {
         console.log("未找到捐贈碼欄位，跳過此步驟");
       }
-
       //6. 結帳：填寫收件人資料
-      if (alltests[test].logisticsOption) {
-        await page.fill("#email", allconsts.wcInput.email);
-        await page.fill(
-          "#shipping-first_name",
-          allconsts.wcInput.shippingFirstName
-        );
-        await page.fill(
-          "#shipping-last_name",
-          allconsts.wcInput.shippingLastName
-        );
-        await page.fill(
-          "#shipping-address_1",
-          allconsts.wcInput.shippingAddress1
-        );
-        await page.fill("#shipping-city", allconsts.wcInput.shippingCity);
-        await page.fill("#shipping-state", allconsts.wcInput.shippingState);
-        await page.fill(
-          "#shipping-postcode",
-          allconsts.wcInput.shippingPostcode
-        );
-        await page.fill("#shipping-phone", allconsts.wcInput.shippingPhone);
-      } else if (!alltests[test].logisticsOption) {
-        await page.fill("#email", allconsts.wcInput.email);
-        await page.fill(
-          "#billing-first_name",
-          allconsts.wcInput.shippingFirstName
-        );
-        await page.fill(
-          "#billing-last_name",
-          allconsts.wcInput.shippingLastName
-        );
-        await page.fill(
-          "#billing-address_1",
-          allconsts.wcInput.shippingAddress1
-        );
-        await page.fill("#billing-city", allconsts.wcInput.shippingCity);
-        await page.fill("#billing-state", allconsts.wcInput.shippingState);
-        await page.fill(
-          "#billing-postcode",
-          allconsts.wcInput.shippingPostcode
-        );
-        await page.fill("#billing-phone", allconsts.wcInput.shippingPhone);
-      }
+      await page.fill("#email", allconsts.wcInput.email);
+      await page.fill(
+        `${alltests[test].productID == allconsts.productIDVirtual ? "#billing" : "#shipping"}-first_name`,
+        allconsts.wcInput.shippingFirstName
+      );
+      await page.fill(
+        `${alltests[test].productID == allconsts.productIDVirtual ? "#billing" : "#shipping"}-last_name`,
+        allconsts.wcInput.shippingLastName
+      );
+      await page.fill(
+        `${alltests[test].productID == allconsts.productIDVirtual ? "#billing" : "#shipping"}-address_1`,
+
+        allconsts.wcInput.shippingAddress1
+      );
+      await page.fill(`${alltests[test].productID == allconsts.productIDVirtual ? "#billing" : "#shipping"}-city`, allconsts.wcInput.shippingCity);
+      await page.fill(`${alltests[test].productID == allconsts.productIDVirtual ? "#billing" : "#shipping"}-state`, allconsts.wcInput.shippingState);
+      await page.fill(
+        `${alltests[test].productID == allconsts.productIDVirtual ? "#billing" : "#shipping"}-postcode`,
+        allconsts.wcInput.shippingPostcode
+      );
+      await page.fill(`${alltests[test].productID == allconsts.productIDVirtual ? "#billing" : "#shipping"}-phone`, allconsts.wcInput.shippingPhone);
+
 
       // 檢查核取方塊的狀態，只有在未勾選時才進行勾選
 
@@ -948,17 +911,16 @@ const sharedActions = {
         console.log("使用相同的地址接收帳單");
       }
 
-      await page.waitForTimeout(1500); // 等待，讓運送選項讀取完
+      await page.waitForTimeout(2000); // 等待，讓運送選項讀取完
 
       // 根據 HTML，運送區塊的 ID 為 shipping-option，以此判斷區塊是否存在且可見
       const shippingOptionsSection = page.locator("#shipping-option");
       if (await shippingOptionsSection.isVisible()) {
         console.log("偵測到「運送選項」區塊，開始選擇物流...");
+        console.log(alltests[test].logisticsOption)
         await page.click(`input[value^="${alltests[test].logisticsOption}"]`); // 選擇物流方式
         await page.waitForTimeout(1500);
-        // await shippingOptionsSection.screenshot({
-        //   path: `records/${test}/screenshot-shipping-option.png`,
-        // });
+
       } else {
         console.log(
           "未偵測到「運送選項」區塊（可能為虛擬商品），跳過物流選擇。"
@@ -969,9 +931,7 @@ const sharedActions = {
       await page.click(`input[value="${alltests[test].paymentOption}"]`); // 選擇付款方式
       console.log(alltests[test].paymentOption);
       await page.waitForTimeout(1000);
-      // await page.locator("#payment-method").screenshot({
-      //   path: `records/${test}/screenshot-payment-method.png`,
-      // });
+
       await page.click(
         `.${"wc-block-components-button wp-element-button wc-block-components-checkout-place-order-button contained"
           .split(" ")
@@ -983,10 +943,11 @@ const sharedActions = {
       try {
         // 設置較短的超時時間，避免長時間等待
         await page.waitForSelector('input[type="button"]', { timeout: 5000 });
-
-        await page
-          .locator("body")
-          .screenshot({ path: `records/${test}/超.png` });
+        if (alltests[test].needLogiScreenshot) {
+          await page
+            .locator("body")
+            .screenshot({ path: `records/${test}/${alltests[test].logisticsSelectStore}.png` });
+        }
 
         await page.click('input[type="button"]'); //本寫法僅供測試環境的物流。正式環境要另外寫。
         await page.waitForTimeout(1500);
@@ -994,26 +955,6 @@ const sharedActions = {
         console.log("宅配不用選擇門市");
       }
 
-      //如果有警告頁面
-      // const connectionWarning2 = await page.$('button:has-text("進階")');
-
-      // if (connectionWarning2) {
-      //   await connectionWarning2.click();
-
-      //   // 等待詳細資訊區塊出現
-      //   await page.waitForSelector("#details:not(.hidden)", { timeout: 5000 });
-
-      //   // 找到並點擊「繼續前往」連結
-      //   const proceedLink = await page.waitForSelector("#proceed-link", {
-      //     visible: true,
-      //     timeout: 5000,
-      //   });
-      //   if (proceedLink) {
-      //     await proceedLink.click();
-      //   }
-
-      //   console.log("WooCommerce 下單完成");
-      // }
       await page.waitForTimeout(3000);
     } catch (error) {
       console.error(error);
@@ -1021,17 +962,17 @@ const sharedActions = {
   },
 
   //三、付款
-  // 3.1 信用卡付款 - 一次付清
+  // 3.1 信用卡付款 - 一次付清 (paymentAction)
   aioCheckOutCreditCard: async function (page, test) {
     try {
-      try {
+
+      if (alltests[test].creditInstallment) {
         await page.selectOption(
           "#selectInstallments",
           alltests[test].creditInstallment
         );
-      } catch (error) {
-        console.log("不是分期付款，繼續執行");
       }
+
       // 檢查是否有分期付款選項且該元素是可見的
 
       // 使用安全元素等待功能
@@ -1040,7 +981,7 @@ const sharedActions = {
         retries: 3,
         description: "信用卡輸入區域"
       });
-      
+
       if (!cardInputReady) {
         await diagnosePage(page, test, "找不到信用卡輸入區域");
         throw new Error("無法載入信用卡輸入區域，付款流程無法繼續");
@@ -1092,13 +1033,17 @@ const sharedActions = {
       await page.getByRole("link", { name: "送出(Submit)" }).click();
       await page.waitForTimeout(1500);
       await page.locator(".site-content").screenshot({
-        path: `records/${test}/${alltests[test].paymentScreenshotAIO}.png`,
+        path: `records/${test}/${alltests[test].paymentAIO}.png`,
       });
       await page.waitForSelector('a.btn:has-text("返回商店")');
       await page.click('a.btn:has-text("返回商店")');
-      await page.locator("main").screenshot({
-        path: `records/${test}/WC付款成功.png`,
-      });
+
+      if (test === "test000") {
+        await page.locator("main").screenshot({
+          path: `records/${test}/${alltests[test].paymentWCResult}.png`,
+        });
+      }
+
     } catch (error) {
       console.error("自動化過程發生錯誤:", error);
     }
@@ -1114,14 +1059,14 @@ const sharedActions = {
     await page.waitForSelector('input[type="submit"]', { timeout: 5000 });
     await page.click('input[type="submit"]');
     await page.locator(".site-content").screenshot({
-      path: `records/${test}/${alltests[test].paymentScreenshotAIO}.png`,
+      path: `records/${test}/${alltests[test].paymentAIO}.png`,
     });
     await page.waitForSelector(
       'a.btn.btn-deep-gray.btn-en:has-text("返回商店")'
     );
     await page.getByRole("link", { name: "返回商店" }).click();
     await page.locator("main").screenshot({
-      path: `records/${test}/購物完成.png`,
+      path: `records/${test}/${alltests[test].paymentWCResult}.png`,
     });
   },
 
@@ -1141,7 +1086,7 @@ const sharedActions = {
 
     // 使用頁面截圖而不是元素截圖
     await page.screenshot({
-      path: `records/${test}/${alltests[test].paymentScreenshotAIO}.png`,
+      path: `records/${test}/${alltests[test].paymentAIO}.png`,
     });
 
     let MerchantTradeNo = "";
@@ -1165,7 +1110,7 @@ const sharedActions = {
     await page.waitForSelector('a.btn:has-text("返回商店")');
     await page.click('a.btn:has-text("返回商店")');
     await page.locator("main").screenshot({
-      path: `records/${test}/WC購買完成.png`,
+      path: `records/${test}/${alltests[test].paymentWCResult}.png`,
     });
 
     //銷帳
@@ -1185,7 +1130,7 @@ const sharedActions = {
 
     // 使用頁面截圖而不是元素截圖
     await page.screenshot({
-      path: `records/${test}/${alltests[test].paymentScreenshotAIO}.png`,
+      path: `records/${test}/${alltests[test].paymentAIO}.png`,
     });
 
     let MerchantTradeNo = "";
@@ -1209,7 +1154,7 @@ const sharedActions = {
     await page.waitForSelector('a.btn:has-text("返回商店")');
     await page.click('a.btn:has-text("返回商店")');
     await page.locator("main").screenshot({
-      path: `records/${test}/WC 建立訂單成功.png`,
+      path: `records/${test}/${alltests[test].paymentWCResult}.png`,
     });
 
     //銷帳
@@ -1228,7 +1173,7 @@ const sharedActions = {
 
     // 使用頁面截圖而不是元素截圖
     await page.screenshot({
-      path: `records/${test}/${alltests[test].paymentScreenshotAIO}.png`,
+      path: `records/${test}/${alltests[test].paymentAIO}.png`,
     });
 
     let MerchantTradeNo = "";
@@ -1252,7 +1197,7 @@ const sharedActions = {
     await page.waitForSelector('a.btn:has-text("返回商店")');
     await page.click('a.btn:has-text("返回商店")');
     await page.locator("main").screenshot({
-      path: `records/${test}/WC建立訂單成功}.png`,
+      path: `records/${test}/${alltests[test].paymentWCResult}}.png`,
     });
 
     //銷帳
@@ -1263,22 +1208,22 @@ const sharedActions = {
   TWQR: async function (page, test) {
     try {
       await page.click('a.btn:has-text("測試付款請點此")');
+      await page.waitForTimeout(1000);
       const pages = page.context().pages();
       if (pages.length > 1) {
         const newPage = pages[pages.length - 1];
         await page.waitForTimeout(1000);
         await newPage.waitForLoadState("networkidle");
         await newPage.click("#inputTwqrMockPaidSuccess");
-        console.log("已點擊交易成功按鈕");
         console.log("TWQR 付款流程完成");
 
         await page.locator(".site-content").screenshot({
-          path: `records/${test}/${alltests[test].paymentScreenshotAIO}.png`,
+          path: `records/${test}/${alltests[test].paymentAIO}.png`,
         });
         await page.waitForSelector('a.btn:has-text("返回商店")');
         await page.click('a.btn:has-text("返回商店")');
         await page.locator("main").screenshot({
-          path: `records/${test}/付款完成頁面.png`,
+          path: `records/${test}/${alltests[test].paymentWCResult}.png`,
         });
       }
     } catch (error) {
@@ -1286,16 +1231,14 @@ const sharedActions = {
     }
   },
 
-  //3.7 BNPL
-  BNPL: async function (page, test) {
+  //3.7 BNPL-裕富
+  BNPLYurich: async function (page, test) {
     try {
       console.log("BNPL Start");
       await page.waitForTimeout(3000);
       // 先點擊無卡分期按鈕
-      await page.click('li[title="BNPL"]#liBNPL.ptl-yurich');
-      
-      
-      
+
+      await page.click('#liBNPL');
 
       // 等待 BNPL 區域載入
       await page.waitForSelector("#BNPL", { state: "visible", timeout: 15000 });
@@ -1320,7 +1263,7 @@ const sharedActions = {
 
       // 截圖交易申請結果
       await page.locator(".site-content").screenshot({
-        path: `records/${test}/${alltests[test].paymentScreenshotAIO}.png`,
+        path: `records/${test}/${alltests[test].paymentAIO}.png`,
       });
 
       // 尋找返回商店按鈕
@@ -1338,8 +1281,35 @@ const sharedActions = {
     }
   },
 
-  //3.8 微信
+  //3.8 BNPL-中租
+  BNPLZingala: async function (page, test) {
+    console.log("BNPL Zingala 開始")
+    await page.locator('label.pib-radio:has(input[value="1"])').click();
+    await page.click("#BNPLPaySubmit");
+    await page.waitForTimeout(3000);
 
+    if (test === "test021b") {
+      await page.selectOption('select[name="transaction_state"]', "003");
+    }
+    else if (test === "test021c") {
+      await page.selectOption('select[name="transaction_state"]', "006");
+    }
+
+    await page.locator('form[action="/MockZingala/PaymentResult"]').screenshot({
+      path: `records/${test}/${alltests[test].bnplOption}.png`,
+    });
+
+    await page.click('input[type="submit"]');
+
+    await page.waitForTimeout(1500);
+
+    await page.locator(".site-content").screenshot({
+      path: `records/${test}/${alltests[test].paymentAIO}.png`,
+    });
+
+  },
+
+  //3.9 微信
   WeiXin: async function (page, test) {
     await page.click("#WeiXinPaySubmit");
     await page.waitForTimeout(2000);
@@ -1369,12 +1339,12 @@ const sharedActions = {
 
     // 在原分頁（舊分頁）進行截圖
     await page.locator(".site-content").screenshot({
-      path: `records/${test}/${alltests[test].paymentScreenshotAIO}.png`,
+      path: `records/${test}/${alltests[test].paymentAIO}.png`,
     });
     await page.waitForSelector('a.btn:has-text("返回商店")');
     await page.click('a.btn:has-text("返回商店")');
     await page.locator("main").screenshot({
-      path: `records/${test}/付款完成頁面.png`,
+      path: `records/${test}/${alltests[test].paymentWCResult}.png`,
     });
   },
 
@@ -1384,10 +1354,10 @@ const sharedActions = {
       method == "ATM"
         ? "10002"
         : method == "CVS"
-        ? "10003"
-        : method == "BARCODE"
-        ? "10004"
-        : "";
+          ? "10003"
+          : method == "BARCODE"
+            ? "10004"
+            : "";
 
     await page.goto(`${allconsts.mockMerchantURL}`);
     await page.fill("#MerchantID", "3002607");
@@ -1395,21 +1365,21 @@ const sharedActions = {
     await page.selectOption("#PaymentTypeID", paymentMethod);
     await page.click('input[type="button"][value="Create"]');
     await page.locator("body").screenshot({
-      path: `records/${test}/${alltests[test].paymentScreenshotMock}.png`,
+      path: `records/${test}/銷帳畫面.png`,
     });
     console.log("銷帳完畢");
   },
 
   //四、進入 WooCommerce 後台檢查訂單
   checkWCBackStage: async function (page, test) {
- 
+
     //獲取三個變數的值
     let paymentMerchantTradeNo = "";
     let logisticsMerchantTradeNo = "";
     let invoiceNumber = "";
 
     try {
-      
+
       await page.goto(`${allconsts.baseURL}/wp-login.php`);
       await page.fill("#user_login", allconsts.WCLogin.WC_UserName);
       await page.fill("#user_pass", allconsts.WCLogin.WC_PassWord);
@@ -1439,33 +1409,46 @@ const sharedActions = {
       await page.waitForTimeout(1500);
 
       //確定有建立 WC 訂單
-      await page.locator("#order_data").screenshot({
-        path: `records/${test}/${alltests[test].paymentScreenshotWCBackStage}.png`,
-      });
-      console.log("截圖：確定有建立 WC 訂單")
-
-
+      // await page.locator("#order_data").screenshot({
+      //   path: `records/${test}/WC訂單內頁.png`,
+      // });
+      // console.log("截圖：確定有建立 WC 訂單")
 
       //如果要手動建立物流訂單，就要按下建立物流訂單的按鈕
       try {
         const logisticsBtn = await page.$('input[value="建立物流訂單"]');
         if (logisticsBtn) {
-          await page.locator("#order_data").screenshot({
-            path: `records/${test}/${alltests[test].logisticsScreenshotWCBackStageBefore}.png`,
-          });
-          console.log("截圖：手動建立物流訂單以前")
+
+          //如果以後每種物流都要截圖給測案，以下這段要改
+          if (test === "test000") {
+            await page.locator("#order_data").screenshot({
+              path: `records/${test}/${alltests[test].logisticsWCBackStageBefore}.png`,
+            });
+            console.log("截圖：手動建立物流訂單以前")
+          }
+
           await logisticsBtn.click();
           await page.waitForTimeout(3000);
           console.log("手動建立物流訂單");
           await page.waitForTimeout(5000);
+
+          //如果以後每種物流都要截圖給測案，以下這段要改
+          if (test === "test000") {
+            await page.locator("#order_data").screenshot({
+              path: `records/${test}/${alltests[test].logisticsWCBackStageAfter}.png`,
+            }); console.log("截圖：手動建立物流訂單以後");
+          }
+
+          if (alltests[test].needLogiScreenshot) {
+            await page.locator("#order_data").screenshot({
+              path: `records/${test}/${alltests[test].logisticsWCBackStage}.png`,
+            });
+          }
+
+
+        } else if (!logisticsBtn && alltests[test].logisticsOption&&alltests[test].needLogiScreenshot) {
           await page.locator("#order_data").screenshot({
-            path: `records/${test}/${alltests[test].logisticsScreenshotWCBackStage}.png`,
-          });
-      
-          console.log("截圖：手動建立物流訂單以後");
-        } else if (!logisticsBtn && alltests[test].logisticsOption) {
-          await page.locator("#order_data").screenshot({
-            path: `records/${test}/${alltests[test].logisticsScreenshotWCBackStage}.png`,
+            path: `records/${test}/${alltests[test].logisticsWCBackStage}.png`,
           });
           console.log("截圖：已自動建立物流單");
         }
@@ -1476,17 +1459,25 @@ const sharedActions = {
       //如果要手動開發票，就要按下開立發票的按鈕
       try {
         const issueInvBtn = await page.$('input[value="開立發票"]');
-        if (issueInvBtn) {
+        if (issueInvBtn && alltests[test].paymentAction && alltests[test].needInvoiceScreenshot) {
+          console.log("偵測到「開立發票」按鈕，準備手動開立發票");
           await page.locator("#order_data").screenshot({
             path: `records/${test}/${alltests[test].invoiceManualWCBefore}.png`,
           });
+          console.log("截圖：手動開立發票前");
+
           await issueInvBtn.click();
+          console.log("已點擊「開立發票」按鈕");
           await page.waitForTimeout(5000);
-          console.log("手動開立發票");
-         
+          console.log("手動開立發票完成");
+        } else if (!issueInvBtn) {
+          console.log("未偵測到「開立發票」按鈕，可能已自動開立發票");
+        } else {
+          console.log("不需要手動開立發票（paymentAction 為 false）");
         }
       } catch (e) {
-        console.log("自動開立發票，不需要手動");
+        console.log("手動開立發票操作失敗:", e.message);
+        console.log("可能原因：發票已自動開立或按鈕不存在");
       }
 
       // 1. 抓取金流特店交易編號 (paymentMerchantTradeNo)
@@ -1545,38 +1536,95 @@ const sharedActions = {
       );
       console.log("發票號碼：", invoiceNumber);
 
-      // 使用安全截圖功能
-      await safeScreenshot(page, page.locator("#order_data"), {
-        path: `records/${test}/${autoIssue?alltests[test].invoiceAutoWCAfter:alltests[test].invoiceManualWCAfter}.png`,
-        timeout: 15000,
-        retries: 2
-      });
+      if (alltests[test].needInvoiceScreenshot) {
+        await safeScreenshot(page, page.locator("#order_data"), {
+          path: `records/${test}/${config.autoIssue ? alltests[test].invoiceAutoWCAfter : alltests[test].invoiceManualWCAfter}.png`,
+          timeout: 15000,
+          retries: 2
+        });
+      }
 
-     
+      if (alltests[test].paymentAction) {
+        await safeScreenshot(page, page.locator("#order_data"), {
+          path: `records/${test}/${alltests[test].paymentWCBackStage}.png`,
+          timeout: 15000,
+          retries: 2
+        });
+      }
 
       //點擊列印物流單按鈕
       try {
         const printLogisticsBtn = await page.$('input[value="列印物流單"]');
         if (printLogisticsBtn) {
           await printLogisticsBtn.click();
-        }
-        const pages = page.context().pages();
-        if (pages.length > 1) {
-          const newPage = pages[pages.length - 1];
-          await page.waitForTimeout(3000);
-          await newPage.waitForLoadState("networkidle");
-         
-          await newPage.screenshot({
-            path: `records/${test}/${alltests[test].logisticsScreenshotPrintLabel}.png`,
-          });
-          console.log("已截圖物流單列印頁面");
-          
-          // 切換回原分頁，確保後續動作在正確的分頁執行
-          await page.bringToFront();
-       
+          console.log("已點擊列印物流單按鈕");
+
+          // 等待新分頁出現
+          await page.waitForTimeout(2000);
+
+          const pages = page.context().pages();
+          if (pages.length > 1) {
+            const newPage = pages[pages.length - 1];
+            console.log("偵測到新分頁，開始等待載入");
+
+            // 多重等待機制確保頁面完全載入
+            try {
+              // 1. 等待頁面基本載入
+              await newPage.waitForLoadState("domcontentloaded", { timeout: 10000 });
+              console.log("頁面 DOM 載入完成");
+
+              // 2. 等待網路閒置
+              await newPage.waitForLoadState("networkidle", { timeout: 15000 });
+              console.log("頁面網路載入完成");
+
+              // 3. 額外等待確保頁面渲染完成
+              await page.waitForTimeout(3000);
+
+              // 4. 嘗試等待頁面中的關鍵元素（如果存在）
+              try {
+                await newPage.waitForSelector("body", { state: "visible", timeout: 5000 });
+                console.log("頁面內容已可見");
+              } catch (selectorError) {
+                console.log("等待頁面元素超時，但繼續進行截圖");
+              }
+
+              // 5. 進行截圖
+              if (alltests[test].needLogiScreenshot) {
+                await newPage.screenshot({
+                  path: `records/${test}/${alltests[test].logisticsPrintLabel}.png`,
+                  fullPage: true,
+                  timeout: 10000
+                });
+                console.log("已截圖物流單列印頁面");
+              }
+
+
+            } catch (loadError) {
+              console.log("頁面載入過程發生錯誤，嘗試直接截圖:", loadError.message);
+
+              // 如果載入失敗，仍嘗試截圖
+              try {
+                await page.waitForTimeout(5000); // 額外等待
+                await newPage.screenshot({
+                  path: `records/${test}/${alltests[test].logisticsPrintLabel}.png`,
+                  fullPage: true,
+                  timeout: 10000
+                });
+                console.log("備用方案截圖成功");
+              } catch (screenshotError) {
+                console.log("備用截圖也失敗:", screenshotError.message);
+              }
+            }
+
+            // 切換回原分頁，確保後續動作在正確的分頁執行
+            await page.bringToFront();
+            console.log("已切換回原分頁");
+          } else {
+            console.log("未偵測到新分頁開啟");
+          }
         }
       } catch (error) {
-        console.log("沒有列印物流單按鈕");
+        console.log("列印物流單操作失敗:", error.message);
       }
     } catch (error) {
       console.error("後台檢查過程發生錯誤:", error);
@@ -1600,7 +1648,7 @@ const sharedActions = {
         ? allconsts.ECPayLogin[service][logisticsType].username
         : allconsts.ECPayLogin[service].username
     );
-    console.log(`登入廠商管理後台，輸入賣家帳號 ${ service == "Logistics"
+    console.log(`登入廠商管理後台，輸入賣家帳號 ${service == "Logistics"
       ? allconsts.ECPayLogin[service][logisticsType].username
       : allconsts.ECPayLogin[service].username}`)
 
@@ -1620,7 +1668,7 @@ const sharedActions = {
         : allconsts.ECPayLogin[service].identifier
     );
 
-    console.log(`已輸入統一編號：${ service == "Logistics"
+    console.log(`已輸入統一編號：${service == "Logistics"
       ? allconsts.ECPayLogin[service][logisticsType].identifier
       : allconsts.ECPayLogin[service].identifier}`)
     await page.waitForTimeout(750);
@@ -1641,11 +1689,11 @@ const sharedActions = {
 
         // 檢查是否出現驗證碼錯誤提示
         let errorDetected = false;
-        
+
         try {
           // 等待可能出現的錯誤對話框
           await page.waitForSelector('.pp-container', { timeout: 3000 });
-          
+
           // 檢查是否包含錯誤訊息
           const errorText = await page.textContent('.pp-container .ftp-txt');
           if (errorText && errorText.includes('驗證碼輸入錯誤')) {
@@ -1654,16 +1702,16 @@ const sharedActions = {
         } catch (e) {
           // 沒有找到錯誤對話框，繼續正常流程
         }
-        
+
         if (errorDetected) {
           console.log(`驗證碼輸入錯誤，準備重試 (第${captchaRetries + 1}次)`);
-          
+
           // 點擊確定按鈕關閉錯誤對話框
           await page.click('.popup-close.btn');
           await page.waitForTimeout(1000);
-          
+
           captchaRetries++;
-          
+
           // 重新輸入登入密碼（因為會被清空）
           await page.fill(
             'input[placeholder="請輸入您的登入密碼"]',
@@ -1672,7 +1720,7 @@ const sharedActions = {
               : allconsts.ECPayLogin[service].password
           );
           console.log("已重新輸入登入密碼");
-          
+
           // 重新輸入統一編號（因為會被清空）
           await page.fill(
             'input[placeholder="請輸入您的統一編號"]',
@@ -1681,9 +1729,9 @@ const sharedActions = {
               : allconsts.ECPayLogin[service].identifier
           );
           console.log("已重新輸入統一編號");
-          
+
           await page.waitForTimeout(750);
-          
+
           // 刷新驗證碼後重試
           await page.click(".drf-link");
           await page.waitForTimeout(2000);
@@ -1705,10 +1753,10 @@ const sharedActions = {
 
           // 等待一下讓對話框處理完成
           await page.waitForTimeout(1000);
-          
+
           loginSuccessful = true;
           console.log("綠界廠商管理後台登入成功");
-          
+
         } catch (nextStepError) {
           console.log("等待下一步驗證失敗，可能已經成功登入");
           loginSuccessful = true;
@@ -1718,7 +1766,7 @@ const sharedActions = {
       } catch (error) {
         console.log(`登入過程發生錯誤: ${error.message}`);
         captchaRetries++;
-        
+
         // 刷新驗證碼後重試
         try {
           await page.click(".drf-link");
@@ -1735,23 +1783,23 @@ const sharedActions = {
     page,
     service,
     orderData,
-    logisticsType
+    logisticsType,
+    testName  // 參數已加上 ✅
   ) {
-    // 從 testExe.js 引入 test 變數
-  
+
     if (service == "Payment") {
       console.log("開始檢查金流訂單");
       await page.waitForTimeout(5000);
-      
+
       // 更強健的 iframe 等待機制
       let leftFrame = null;
       let retryCount = 0;
       const maxRetries = 5;
-      
+
       while (retryCount < maxRetries && !leftFrame) {
         try {
           console.log(`嘗試獲取 leftFrame iframe (第 ${retryCount + 1} 次)`);
-          
+
           // 等待頁面基本載入，不依賴網路穩定狀態
           try {
             await page.waitForLoadState('domcontentloaded', { timeout: 5000 });
@@ -1759,23 +1807,24 @@ const sharedActions = {
             console.log("DOM 載入檢查超時，繼續嘗試...");
           }
           await page.waitForTimeout(3000);
-          
+
           // 嘗試多種方式獲取 leftFrame
           leftFrame = await page.frame("leftFrame");
-          
+
           if (!leftFrame) {
             // 如果直接獲取失敗，嘗試等待 iframe 出現
-            await page.waitForSelector('iframe[name="leftFrame"]', { 
-              state: 'attached', 
-              timeout: 8000 
+            await page.waitForSelector('iframe[name="leftFrame"]', {
+              state: 'attached',
+              timeout: 8000
             });
             await page.waitForTimeout(1000);
             leftFrame = await page.frame("leftFrame");
           }
-          
+
           // 驗證 iframe 是否真的可用
           if (leftFrame) {
             try {
+
               // 嘗試在 iframe 中查找一個基本元素來確認其已載入
               await leftFrame.waitForSelector('body', { timeout: 5000 });
               console.log("✅ leftFrame iframe 已成功載入");
@@ -1788,17 +1837,17 @@ const sharedActions = {
         } catch (error) {
           console.log(`獲取 leftFrame 失敗 (第 ${retryCount + 1} 次): ${error.message}`);
         }
-        
+
         retryCount++;
         if (retryCount < maxRetries) {
           console.log(`等待 3 秒後重試...`);
           await page.waitForTimeout(3000);
         }
       }
-      
+
       if (!leftFrame) {
-        // 進行頁面診斷
-        await diagnosePage(page, test, "找不到leftFrame-iframe");
+        // 診斷函式改用 testName
+        await diagnosePage(page, testName, "找不到leftFrame-iframe");
         throw new Error(`經過 ${maxRetries} 次嘗試仍無法找到 leftFrame iframe`);
       }
 
@@ -1819,7 +1868,8 @@ const sharedActions = {
 
       // 切換到內容 iframe 填寫表單
       await page.waitForTimeout(2000);
-      const contentFrame = await page.frame("contentFrame");
+      let contentFrame = "";
+      contentFrame = await page.frame("contentFrame");
       if (!contentFrame) {
         throw new Error("找不到 contentFrame iframe");
       }
@@ -1844,13 +1894,18 @@ const sharedActions = {
         );
 
         // 對查詢結果表格進行截圖
-        await contentFrame
-          .locator('div.mb20[style*="overflow-x:scroll"]')
 
-          .screenshot({
-            path: `records/${test}/${alltests[test].paymentScreenshotECPayBackStage}.png`,
-          });
-        console.log("已截圖金流訂單查詢結果");
+        if (alltests[testName].paymentECPayBackStage) {
+          await contentFrame
+            .locator('div.mb20[style*="overflow-x:scroll"]')
+            .screenshot({
+              path: `records/${testName}/${alltests[testName].paymentECPayBackStage}.png`,
+            });
+          console.log("已截圖金流訂單查詢結果");
+        } else { console.log("本次不需要廠商管理後台金流訂單截圖") }
+
+
+
       } catch (error) {
         console.log("無法截圖查詢結果，可能沒有找到訂單:", error.message);
       }
@@ -1881,16 +1936,16 @@ const sharedActions = {
       }
 
       await page.waitForTimeout(1000);
-      
+
       // 更強健的 iframe 等待機制 (Logistics)
       let leftFrame = null;
       let retryCount = 0;
       const maxRetries = 5;
-      
+
       while (retryCount < maxRetries && !leftFrame) {
         try {
           console.log(`嘗試獲取 leftFrame iframe (物流，第 ${retryCount + 1} 次)`);
-          
+
           // 等待頁面基本載入，不依賴網路穩定狀態
           try {
             await page.waitForLoadState('domcontentloaded', { timeout: 5000 });
@@ -1898,25 +1953,25 @@ const sharedActions = {
             console.log("DOM 載入檢查超時，繼續嘗試...");
           }
           await page.waitForTimeout(3000);
-          
+
           // 嘗試獲取 leftFrame
           leftFrame = await page.frame("leftFrame");
-          
+
           if (!leftFrame) {
             // 如果直接獲取失敗，嘗試等待 iframe 出現
-            await page.waitForSelector('iframe[name="leftFrame"]', { 
-              state: 'attached', 
-              timeout: 8000 
+            await page.waitForSelector('iframe[name="leftFrame"]', {
+              state: 'attached',
+              timeout: 8000
             });
             await page.waitForTimeout(1000);
             leftFrame = await page.frame("leftFrame");
           }
-          
+
           // 驗證 iframe 是否真的可用
           if (leftFrame) {
             try {
               await leftFrame.waitForSelector('body', { timeout: 5000 });
-              console.log("✅ leftFrame iframe (物流) 已成功載入");
+              console.log("leftFrame iframe (物流) 已成功載入");
               break;
             } catch (verifyError) {
               console.log("leftFrame iframe 存在但內容未載入，重試...");
@@ -1926,17 +1981,16 @@ const sharedActions = {
         } catch (error) {
           console.log(`獲取 leftFrame 失敗 (物流，第 ${retryCount + 1} 次): ${error.message}`);
         }
-        
+
         retryCount++;
         if (retryCount < maxRetries) {
           console.log(`等待 3 秒後重試...`);
           await page.waitForTimeout(3000);
         }
       }
-      
+
       if (!leftFrame) {
-        // 進行頁面診斷
-        await diagnosePage(page, test, "找不到leftFrame-iframe-物流");
+        await diagnosePage(page, testName, "找不到leftFrame-iframe-物流");
         throw new Error(`經過 ${maxRetries} 次嘗試仍無法找到 leftFrame iframe (物流)`);
       }
 
@@ -1959,7 +2013,8 @@ const sharedActions = {
       //關掉公告頁面
       try {
         // 切換到 contentFrame
-        const contentFrame = await page.frame("contentFrame");
+        let contentFrame = ""
+        contentFrame = await page.frame("contentFrame");
         if (!contentFrame) {
           throw new Error("找不到 contentFrame iframe");
         }
@@ -1991,7 +2046,8 @@ const sharedActions = {
           console.log("已點擊第二個公告的確認按鈕");
           await contentFrame.waitForTimeout(1000);
         }
-// 檢查是否還有第三個公告需要關閉
+
+        // 檢查是否還有第三個公告需要關閉
         const thirdNotice = await contentFrame.$("#ignoreBatchCloseTips2");
         if (thirdNotice && (await thirdNotice.isVisible())) {
           await contentFrame.click("#ignoreBatchCloseTips2");
@@ -2006,7 +2062,8 @@ const sharedActions = {
 
       // 切換到內容 iframe 填寫表單
       await page.waitForTimeout(2000);
-      const contentFrame = await page.frame("contentFrame");
+      let contentFrame = "";
+      contentFrame = await page.frame("contentFrame");
       if (!contentFrame) {
         throw new Error("找不到 contentFrame iframe");
       }
@@ -2022,7 +2079,7 @@ const sharedActions = {
       await contentFrame.click("#Query");
 
       // 等待查詢結果載入並截圖
-      await page.waitForTimeout(5000);
+      await page.waitForTimeout(6000);
       try {
         // 等待查詢結果表格出現
         await contentFrame.waitForSelector("div.scroll_x.mb20", {
@@ -2032,7 +2089,7 @@ const sharedActions = {
 
         // 對查詢結果表格進行截圖
         await contentFrame.locator("div.scroll_x.mb20").screenshot({
-          path: `records/${test}/${alltests[test].logisticsScreenshotECPayBackStage}.png`,
+          path: `records/${testName}/${alltests[testName].logisticsECPayBackStage}.png`,
         });
         console.log("已截圖物流訂單查詢結果");
       } catch (error) {
@@ -2048,16 +2105,16 @@ const sharedActions = {
     } else if (service == "Invoice") {
       await page.waitForTimeout(8000);
       console.log("開始檢查發票");
-      
+
       // 更強健的 iframe 等待機制 (Invoice)
       let leftFrame = null;
       let retryCount = 0;
       const maxRetries = 5;
-      
+
       while (retryCount < maxRetries && !leftFrame) {
         try {
           console.log(`嘗試獲取 leftFrame iframe (發票，第 ${retryCount + 1} 次)`);
-          
+
           // 等待頁面基本載入，不依賴網路穩定狀態
           try {
             await page.waitForLoadState('domcontentloaded', { timeout: 5000 });
@@ -2065,21 +2122,9 @@ const sharedActions = {
             console.log("DOM 載入檢查超時，繼續嘗試...");
           }
           await page.waitForTimeout(3000);
-          
-          // 嘗試獲取 leftFrame
+
           leftFrame = await page.frame("leftFrame");
-          
-          if (!leftFrame) {
-            // 如果直接獲取失敗，嘗試等待 iframe 出現
-            await page.waitForSelector('iframe[name="leftFrame"]', { 
-              state: 'attached', 
-              timeout: 8000 
-            });
-            await page.waitForTimeout(1000);
-            leftFrame = await page.frame("leftFrame");
-          }
-          
-          // 驗證 iframe 是否真的可用
+
           if (leftFrame) {
             try {
               await leftFrame.waitForSelector('body', { timeout: 5000 });
@@ -2093,42 +2138,30 @@ const sharedActions = {
         } catch (error) {
           console.log(`獲取 leftFrame 失敗 (發票，第 ${retryCount + 1} 次): ${error.message}`);
         }
-        
+
         retryCount++;
         if (retryCount < maxRetries) {
           console.log(`等待 3 秒後重試...`);
           await page.waitForTimeout(3000);
-          
-          // 如果已經嘗試超過一半次數，嘗試重新整理頁面
-          if (retryCount >= Math.floor(maxRetries / 2)) {
-            console.log("多次嘗試失敗，嘗試重新整理頁面...");
-            try {
-              await page.reload({ waitUntil: 'domcontentloaded', timeout: 10000 });
-              await page.waitForTimeout(5000);
-            } catch (reloadError) {
-              console.log("頁面重新整理失敗:", reloadError.message);
-            }
-          }
         }
       }
-      
+
       if (!leftFrame) {
-        // 進行頁面診斷
-        await diagnosePage(page, test, "找不到leftFrame-iframe-發票");
+        await diagnosePage(page, testName, "找不到leftFrame-iframe-發票");
         throw new Error(`經過 ${maxRetries} 次嘗試仍無法找到 leftFrame iframe (發票)`);
       }
-      
+
       await leftFrame.click('button:has-text("電子發票")');
       await page.waitForTimeout(2000);
 
       // 頁面導航後重新獲取 leftFrame - 使用相同的強健機制
       let newLeftFrame = null;
       retryCount = 0;
-      
+
       while (retryCount < maxRetries && !newLeftFrame) {
         try {
           console.log(`嘗試重新獲取 leftFrame iframe (發票導航後，第 ${retryCount + 1} 次)`);
-          
+
           // 等待頁面基本載入，不依賴網路穩定狀態
           try {
             await page.waitForLoadState('domcontentloaded', { timeout: 5000 });
@@ -2136,9 +2169,9 @@ const sharedActions = {
             console.log("DOM 載入檢查超時，繼續嘗試...");
           }
           await page.waitForTimeout(3000);
-          
+
           newLeftFrame = await page.frame("leftFrame");
-          
+
           if (newLeftFrame) {
             try {
               await newLeftFrame.waitForSelector('body', { timeout: 5000 });
@@ -2152,16 +2185,16 @@ const sharedActions = {
         } catch (error) {
           console.log(`重新獲取 leftFrame 失敗 (發票導航後，第 ${retryCount + 1} 次): ${error.message}`);
         }
-        
+
         retryCount++;
         if (retryCount < maxRetries) {
           console.log(`等待 3 秒後重試...`);
           await page.waitForTimeout(3000);
         }
       }
-      
+
       if (!newLeftFrame) {
-        await diagnosePage(page, test, "導航後找不到leftFrame-iframe-發票");
+        await diagnosePage(page, testName, "導航後找不到leftFrame-iframe-發票");
         throw new Error(`經過 ${maxRetries} 次嘗試仍無法找到導航後的 leftFrame iframe (發票)`);
       }
 
@@ -2177,7 +2210,8 @@ const sharedActions = {
 
       // 切換到內容 iframe 填寫表單
       await page.waitForTimeout(2000);
-      const contentFrame = await page.frame("contentFrame");
+      let contentFrame = "";
+      contentFrame = await page.frame("contentFrame");
       if (!contentFrame) {
         throw new Error("找不到 contentFrame iframe");
       }
@@ -2201,7 +2235,7 @@ const sharedActions = {
         // 對查詢結果表格進行截圖
         await page.waitForTimeout(1000);
         await contentFrame.locator("div.scroll_x.mb20.mt10").screenshot({
-          path: `records/${test}/${aotuIssue?alltests[test].invoiceAutoECPay:alltests[test].invoiceManualECPay}.png`,
+          path: `records/${testName}/${config.autoIssue ? alltests[testName].invoiceAutoECPay : alltests[testName].invoiceManualECPay}.png`,
         });
         console.log("已截圖電子發票查詢結果");
       } catch (error) {

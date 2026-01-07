@@ -1,6 +1,12 @@
+let config = {
+    logisticsType: "C2C",
+    autoIssue: false,
+    autoLogi: false,
+    testArray: ["test000"]
 
-let test="test000"
-let logisticsType = "C2C";
-let autoIssue=true;
+}
 
-export { logisticsType,test, autoIssue }; 
+export default config
+
+
+
